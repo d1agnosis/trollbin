@@ -1,47 +1,53 @@
 const { MongoClient } = require('mongodb');
 
-const uri = process.env.MONGODB_URI;
-let cachedClient = null;
+let cachedDb = null;
 
 async function connectToDatabase() {
-    if (cachedClient) return cachedClient;
-    const client = new MongoClient(uri);
+    if (cachedDb) {
+        return cachedDb;
+    }
+    const client = new MongoClient(process.env.MONGODB_URI);
     await client.connect();
-    cachedClient = client;
-    return client;
+    const db = client.db('trollbin');
+    cachedDb = db;
+    return db;
 }
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return res.status(405).json({ message: 'Method not allowed' });
     }
 
     try {
-        const { nickname, password, avatar } = req.body;
+        const nickname = req.body.nickname || req.body.username;
+        const password = req.body.password;
+
         if (!nickname || !password) {
-            return res.status(400).json({ error: 'Заполните никнейм и пароль' });
+            return res.status(400).json({ message: 'Заполните все поля!' });
         }
 
-        const client = await connectToDatabase();
-        const db = client.db('trollbin');
+        const db = await connectToDatabase();
         const usersCollection = db.collection('users');
 
-        const existing = await usersCollection.findOne({ nickname });
-        if (existing) {
-            return res.status(400).json({ error: 'Такой никнейм уже занят' });
+        const existingUser = await usersCollection.findOne({ nickname });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Пользователь уже существует' });
         }
 
-        const newUser = {
-            id: Date.now().toString(),
-            nickname,
-            password,
-            avatar: avatar || '',
-            joined: new Date().toISOString().split('T')[0]
-        };
+        const result = await usersCollection.insertOne({ 
+            nickname, 
+            password, 
+            createdAt: new Date() 
+        });
 
-        await usersCollection.insertOne(newUser);
-        return res.status(200).json({ success: true, user: newUser });
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Регистрация успешна!', 
+            userId: result.insertedId.toString() 
+        });
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        console.error('Ошибка бэкенда:', error);
+        // Возвращаем текст ошибки клиенту, чтобы увидеть её на экране
+        return res.status(400).json({ message: 'Ошибка сервера: ' + error.message });
     }
 };
