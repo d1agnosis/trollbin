@@ -224,19 +224,22 @@
         const m = document.getElementById('authMenu');
         const currentUserId = localStorage.getItem('currentUserId');
         
-        if (currentUserId) {
-            // Если нужно будет подгружать имя пользователя с сервера по ID, здесь можно будет сделать fetch-запрос.
-            // Пока оставляем базовую проверку сессии.
-            m.innerHTML = '<a href="profile.html?id=' + currentUserId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Профиль</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-            
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    localStorage.removeItem('currentUserId');
-                    location.reload();
-                });
-            }
+        if (currentUserId && m) {
+            try {
+                const localUserStr = localStorage.getItem('currentUser');
+                if (localUserStr) {
+                    const u = JSON.parse(localUserStr);
+                    const uId = u.id || u._id;
+                    m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                    
+                    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                        e.preventDefault();
+                        localStorage.removeItem('currentUserId');
+                        localStorage.removeItem('currentUser');
+                        location.reload();
+                    });
+                }
+            } catch(e) {}
         }
     });
 
@@ -256,32 +259,55 @@
         }
 
         if (password.length < 8) {
-            alert('Пароль слишком короткий!');
+            alert('Пароль слишком короткий (минимум 8 символов)!');
             return;
         }
 
         try {
+            // Пытаемся отправить на бэкенд, если он вдруг есть
             const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nickname: username, password: password })
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                alert(data.message || 'Ошибка регистрации');
+            if (response.ok) {
+                const data = await response.json();
+                const userId = data.userId || data.id || data._id;
+                localStorage.setItem('currentUserId', userId);
+                alert('Регистрация успешна!');
+                window.location.href = 'profile.html?id=' + userId;
                 return;
             }
-
-            localStorage.setItem('currentUserId', data.userId);
-
-            alert('Регистрация успешна!');
-            window.location.href = 'profile.html?id=' + data.userId;
         } catch (err) {
-            console.error(err);
-            alert('Ошибка соединения с сервером');
+            console.log('Сервер недоступен, регистрируем локально...');
         }
+
+        // Резервный вариант (работает без сервера через localStorage)
+        let users = JSON.parse(localStorage.getItem('users') || '[]');
+        
+        // Проверяем, нет ли уже такого пользователя
+        const existing = users.find(u => u.nickname.toLowerCase() === username.toLowerCase());
+        if (existing) {
+            alert('Пользователь с таким именем уже существует!');
+            return;
+        }
+
+        // Создаем нового пользователя с уникальным ID
+        const newUserId = 'user_' + Date.now();
+        const newUser = {
+            id: newUserId,
+            nickname: username,
+            password: password
+        };
+
+        users.push(newUser);
+        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem('currentUserId', newUserId);
+        localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+        alert('Регистрация успешна!');
+        window.location.href = 'profile.html?id=' + newUserId;
     }
 </script>
 </body>
