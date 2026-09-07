@@ -227,27 +227,28 @@
     document.addEventListener("DOMContentLoaded", function() {
         const m = document.getElementById('authMenu');
         const currentUserId = localStorage.getItem('currentUserId');
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
         
-        if (currentUserId) {
-            const u = users.find(x => x.id === currentUserId);
-            if (u) {
-                m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-                
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function(e) {
+        if (currentUserId && m) {
+            try {
+                const localUserStr = localStorage.getItem('currentUser');
+                if (localUserStr) {
+                    const u = JSON.parse(localUserStr);
+                    const uId = u.id || u._id;
+                    m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                    
+                    document.getElementById('logoutBtn').addEventListener('click', function(e) {
                         e.preventDefault();
                         localStorage.removeItem('currentUserId');
+                        localStorage.removeItem('currentUser');
                         location.reload();
                     });
                 }
-            }
+            } catch(e) {}
         }
     });
 
-    // Функция входа через localStorage (без сервера)
-    function loginUser() {
+    // Функция входа с поддержкой бэкенда и localStorage
+    async function loginUser() {
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
 
@@ -256,10 +257,29 @@
             return;
         }
 
-        // Получаем массив пользователей из localStorage
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        try {
+            // Пытаемся авторизоваться через сервер (если он есть)
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname: username, password: password })
+            });
 
-        // Ищем пользователя по никнейму и паролю
+            if (response.ok) {
+                const data = await response.json();
+                const userId = data.id || data._id;
+                
+                localStorage.setItem('currentUserId', userId);
+                localStorage.setItem('currentUser', JSON.stringify(data));
+                window.location.href = 'profile.html?id=' + userId;
+                return;
+            }
+        } catch (error) {
+            console.log('Сервер недоступен, проверяем локальное хранилище...');
+        }
+
+        // Резервный вариант: проверка через localStorage
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
         const user = users.find(u => u.nickname.toLowerCase() === username.toLowerCase() && u.password === password);
 
         if (!user) {
@@ -267,9 +287,10 @@
             return;
         }
 
-        // Сохраняем ID авторизованного пользователя и перенаправляем в профиль
-        localStorage.setItem('currentUserId', user.id);
-        window.location.href = 'profile.html?id=' + user.id;
+        const userId = user.id || user._id;
+        localStorage.setItem('currentUserId', userId);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        window.location.href = 'profile.html?id=' + userId;
     }
 </script>
 </body>
