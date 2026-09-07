@@ -295,6 +295,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     const m = document.getElementById('authMenu');
     currentUserId = localStorage.getItem('currentUserId');
     
+    // Если id вообще не записан в памяти — просим войти
     if (!currentUserId) {
         alert('Для создания паст необходимо войти в аккаунт!');
         window.location.href = 'login.html';
@@ -303,27 +304,29 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     try {
         const response = await fetch('/api/users/' + currentUserId);
-        if (!response.ok) {
-            localStorage.removeItem('currentUserId');
-            window.location.href = 'login.html';
-            return;
+        if (response.ok) {
+            const u = await response.json();
+            currentNickname = u.nickname;
+            
+            m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+            
+            document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                localStorage.removeItem('currentUserId');
+                window.location.href = 'login.html';
+            });
+        } else {
+            // Если сервер ответил ошибкой (но сессия есть), даем псевдоним по ID
+            currentNickname = "User_" + currentUserId;
+            m.innerHTML = '<span style="color: #ff3333;">ID: ' + currentUserId + '</span>';
         }
-        const u = await response.json();
-        currentNickname = u.nickname;
         
-        m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-        
-        document.getElementById('logoutBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            localStorage.removeItem('currentUserId');
-            window.location.href = 'login.html';
-        });
-
         updateAuthorDisplay();
     } catch (err) {
-        console.error(err);
-        localStorage.removeItem('currentUserId');
-        window.location.href = 'login.html';
+        console.warn('Сервер недоступен, работаем автономно', err);
+        currentNickname = "User_" + currentUserId;
+        m.innerHTML = '<span style="color: #ff3333;">Автономный режим</span>';
+        updateAuthorDisplay();
     }
 });
 
