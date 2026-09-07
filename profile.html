@@ -16,7 +16,6 @@
         }
         
         .profile-wrapper { max-width: 900px; margin: 0 auto; }
-
         .profile-top-container { display: flex; gap: 15px; margin-bottom: 15px; align-items: stretch; }
 
         .profile-header-wrapper {
@@ -30,7 +29,6 @@
             position: relative;
         }
 
-        /* Стили для баннера */
         .profile-banner {
             width: 100%;
             height: 120px;
@@ -142,9 +140,7 @@
 
     <div class="profile-wrapper">
         <div class="profile-top-container">
-            
             <div class="profile-header-wrapper">
-                <!-- Баннер профиля -->
                 <div id="pBanner" class="profile-banner"></div>
 
                 <div class="profile-header">
@@ -186,6 +182,7 @@
         </div>
     </div>
 
+    <!-- Модальное окно комментария -->
     <div id="profileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; font-family: Arial, sans-serif;">
         <div style="background: #141414; border: 1px solid #222; border-radius: 4px; width: 450px; max-width: 90%; padding: 20px; box-sizing: border-box;">
             <div style="color: #fff; font-weight: bold; margin-bottom: 15px; font-size: 15px;">Add Profile Comment</div>
@@ -216,22 +213,14 @@
             toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
         }
 
-        function getProfileTargetId() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const profileId = urlParams.get('id');
-            const currentUserId = localStorage.getItem('currentUserId');
-            return profileId || currentUserId || 'unknown';
-        }
-
-        function getProfileStorageKey() {
-            return 'profile_comments_' + getProfileTargetId();
-        }
-
+        // Получаем текущего пользователя из localStorage (для шапки сайта)
         function getCurrentUser() {
-            const currentId = localStorage.getItem('currentUserId');
-            if (!currentId) return null;
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            return users.find(u => u.id === currentId) || null;
+            try {
+                const userStr = localStorage.getItem('currentUser') || localStorage.getItem('user');
+                return userStr ? JSON.parse(userStr) : null;
+            } catch (e) {
+                return null;
+            }
         }
 
         function updateHeaderAuth() {
@@ -240,8 +229,9 @@
             const actionArea = document.getElementById('commentActionArea');
 
             if (currentUser) {
+                const userId = currentUser.id || currentUser._id;
                 authMenu.innerHTML = `
-                    <a href="profile.html?id=${currentUser.id}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${currentUser.nickname}</a>
+                    <a href="profile.html?id=${userId}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${currentUser.nickname}</a>
                     <span style="color: #444;">/</span>
                     <a href="#" onclick="logoutUser(event)" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>
                 `;
@@ -258,137 +248,81 @@
 
         function logoutUser(e) {
             e.preventDefault();
+            localStorage.removeItem('currentUser');
             localStorage.removeItem('currentUserId');
-            window.location.reload();
+            localStorage.removeItem('user');
+            window.location.href = "index.html";
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
+        // Загружаем данные профиля с сервера
+        document.addEventListener("DOMContentLoaded", async function() {
             updateHeaderAuth();
 
             const urlParams = new URLSearchParams(window.location.search);
-            const profileId = urlParams.get('id');
-            const currentUserId = localStorage.getItem('currentUserId');
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            let profileId = urlParams.get('id');
+            const currentUser = getCurrentUser();
 
-            let user = profileId ? users.find(u => u.id === profileId) : (currentUserId ? users.find(u => u.id === currentUserId) : null);
+            // Если в ссылке нет ID, но пользователь залогинен — показываем его собственный профиль
+            if (!profileId && currentUser) {
+                profileId = currentUser.id || currentUser._id;
+            }
+
             const avatarContainer = document.getElementById('pAvatarContainer');
             const bannerElement = document.getElementById('pBanner');
 
-            if (user) {
-                document.getElementById('pNickname').textContent = user.nickname;
-                document.getElementById('pId').textContent = user.id;
-                
-                const hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
-                document.getElementById('pPastesCount').textContent = hunts.filter(h => h.authorId === user.id || h.author === user.nickname).length;
+            if (!profileId) {
+                document.getElementById('pNickname').textContent = 'Пользователь не найден';
+                document.getElementById('pBio').textContent = 'Укажите ID пользователя в ссылке.';
+                return;
+            }
 
-                if (!user.joined) {
-                    user.joined = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                }
+            try {
+                // Запрос к серверу за данными пользователя
+                const response = await fetch(`/api/users/${profileId}`);
+                if (!response.ok) throw new Error("Не удалось получить данные");
                 
-                let viewerId = currentUserId || sessionStorage.getItem('guestViewerId');
-                if (!viewerId) {
-                    viewerId = 'guest_' + Math.random().toString(36).substring(2);
-                    sessionStorage.setItem('guestViewerId', viewerId);
+                const user = await response.json();
+
+                document.getElementById('pNickname').textContent = user.nickname || "Без имени";
+                document.getElementById('pId').textContent = user.id || user._id;
+                document.getElementById('pJoined').textContent = user.joined || "Недавно";
+                document.getElementById('pViews').textContent = user.profileViews || 0;
+                document.getElementById('pPastesCount').textContent = user.pastesCount || 0;
+                document.getElementById('pFollowers').textContent = (user.followers || []).length;
+                document.getElementById('pFollowing').textContent = (user.following || []).length;
+
+                if (user.bio) {
+                    document.getElementById('pBio').textContent = user.bio;
                 }
 
-                const viewsLogKey = 'profile_views_log_' + user.id;
-                let viewsLog = JSON.parse(localStorage.getItem(viewsLogKey) || '{}');
-                if (!viewsLog[viewerId] || (Date.now() - viewsLog[viewerId] > 24 * 60 * 60 * 1000)) {
-                    user.profileViews = (user.profileViews || 0) + 1;
-                    viewsLog[viewerId] = Date.now();
-                    localStorage.setItem(viewsLogKey, JSON.stringify(viewsLog));
-                    
-                    const userIndex = users.findIndex(u => u.id === user.id);
-                    if (userIndex !== -1) {
-                        users[userIndex] = user;
-                        localStorage.setItem('users', JSON.stringify(users));
-                    }
-                }
-                
-                document.getElementById('pJoined').textContent = user.joined;
-                document.getElementById('pViews').textContent = user.profileViews;
-                updateFollowStats(user);
-
-                // Отрисовка баннера
+                // Баннер
                 if (user.banner && user.banner.trim() !== '') {
                     bannerElement.style.backgroundImage = `url('${user.banner}')`;
                 } else {
-                    bannerElement.style.backgroundImage = 'none';
                     bannerElement.style.background = '#151515';
                 }
 
-                // Отрисовка аватарки
+                // Аватарка
                 if (user.avatar && user.avatar.trim() !== '') {
-                    avatarContainer.innerHTML = `<img id="pAvatar" class="profile-avatar" src="${user.avatar}" alt="Avatar">`;
+                    avatarContainer.innerHTML = `<img class="profile-avatar" src="${user.avatar}" alt="Avatar">`;
                 } else {
                     const firstLetter = user.nickname ? user.nickname.charAt(0).toUpperCase() : '?';
-                    avatarContainer.innerHTML = `<div id="pAvatar" class="profile-avatar">${firstLetter}</div>`;
+                    avatarContainer.innerHTML = `<div class="profile-avatar">${firstItemLetter = firstLetter}</div>`;
                 }
 
-                if (user.bio && user.bio.trim() !== '') document.getElementById('pBio').textContent = user.bio;
-
-                if (currentUserId === user.id) {
+                // Кнопка настроек, если это ваш профиль
+                if (currentUser && (currentUser.id === profileId || currentUser._id === profileId)) {
                     document.getElementById('editProfileBtn').style.display = 'block';
-                } else if (currentUserId) {
-                    document.getElementById('followBtn').style.display = 'inline-block';
-                    checkFollowStatus(currentUserId, user.id);
                 }
-            } else {
+
+            } catch (err) {
+                console.error(err);
                 document.getElementById('pNickname').textContent = 'Пользователь не найден';
-                document.getElementById('pBio').textContent = 'Данный аккаунт не существует.';
-                avatarContainer.innerHTML = `<div id="pAvatar" class="profile-avatar">?</div>`;
+                document.getElementById('pBio').textContent = 'Данный аккаунт не существует в базе данных.';
             }
 
             loadProfileComments();
         });
-
-        function updateFollowStats(targetUser) {
-            document.getElementById('pFollowers').textContent = (Array.isArray(targetUser.followers) ? targetUser.followers : []).length;
-            document.getElementById('pFollowing').textContent = (Array.isArray(targetUser.following) ? targetUser.following : []).length;
-        }
-
-        function checkFollowStatus(currentId, targetId) {
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const currentUser = users.find(u => u.id === currentId);
-            const followBtn = document.getElementById('followBtn');
-
-            if (currentUser && Array.isArray(currentUser.following) && currentUser.following.includes(targetId)) {
-                followBtn.textContent = "Unfollow";
-                followBtn.classList.add('following');
-            } else {
-                followBtn.textContent = "Follow";
-                followBtn.classList.remove('following');
-            }
-        }
-
-        function toggleFollow() {
-            const currentUserId = localStorage.getItem('currentUserId');
-            const targetId = getProfileTargetId();
-            if (!currentUserId || currentUserId === targetId) return;
-
-            let users = JSON.parse(localStorage.getItem('users') || '[]');
-            let currentUser = users.find(u => u.id === currentUserId);
-            let targetUser = users.find(u => u.id === targetId);
-
-            if (!currentUser || !targetUser) return;
-            if (!Array.isArray(currentUser.following)) currentUser.following = [];
-            if (!Array.isArray(targetUser.followers)) targetUser.followers = [];
-
-            const index = currentUser.following.indexOf(targetId);
-            if (index > -1) {
-                currentUser.following.splice(index, 1);
-                targetUser.followers = targetUser.followers.filter(id => id !== currentUserId);
-            } else {
-                currentUser.following.push(targetId);
-                targetUser.followers.push(currentUserId);
-            }
-
-            users = users.map(u => u.id === currentUser.id ? currentUser : (u.id === targetUser.id ? targetUser : u));
-            localStorage.setItem('users', JSON.stringify(users));
-
-            updateFollowStats(targetUser);
-            checkFollowStatus(currentUserId, targetId);
-        }
 
         function openProfileModal() {
             const currentUser = getCurrentUser();
@@ -403,11 +337,15 @@
 
         function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
 
+        // Заглушка для комментариев в профиле (можно перенести на бэкенд при необходимости)
+        function getStorageKey() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return 'profile_comments_' + (urlParams.get('id') || 'general');
+        }
+
         function loadProfileComments() {
             const listDiv = document.getElementById('profileWidgetCommentsList');
-            const storageKey = getProfileStorageKey();
-            const currentUser = getCurrentUser();
-            let comments = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            let comments = JSON.parse(localStorage.getItem(getStorageKey()) || "[]");
             
             if (comments.length === 0) {
                 listDiv.innerHTML = '<div style="color: #666;">no comments found</div>';
@@ -421,23 +359,14 @@
                 
                 const authorDiv = document.createElement('div');
                 authorDiv.style.cssText = "font-size: 11px; color: #61b5ff; margin-bottom: 2px; font-weight: bold;";
-                authorDiv.innerHTML = c.authorId ? `<a href="profile.html?id=${c.authorId}" style="color: #61b5ff; text-decoration: none;">${c.author || "Пользователь"}</a>` : (c.author || "Пользователь");
+                authorDiv.textContent = c.author || "Пользователь";
 
                 const textDiv = document.createElement('div');
-                textDiv.style.cssText = "word-break: break-all; white-space: pre-wrap; color: #ccc; padding-right: 15px;";
-                const escapedText = (c.text || c).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                textDiv.innerHTML = escapedText.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank" style="color: #61b5ff; text-decoration: underline;">${url}</a>`);
+                textDiv.style.cssText = "word-break: break-all; white-space: pre-wrap; color: #ccc;";
+                textDiv.textContent = c.text;
 
                 item.appendChild(authorDiv);
                 item.appendChild(textDiv);
-
-                if (currentUser && (c.author === currentUser.nickname || getProfileTargetId() === currentUser.id)) {
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.textContent = "×";
-                    deleteBtn.style.cssText = "position: absolute; top: 2px; right: 4px; background: transparent; border: none; color: #ff3333; cursor: pointer; font-weight: bold; font-size: 14px; line-height: 1;";
-                    deleteBtn.onclick = () => deleteProfileComment(index);
-                    item.appendChild(deleteBtn);
-                }
                 listDiv.appendChild(item);
             });
         }
@@ -449,21 +378,12 @@
             const text = input.value.trim();
             if (!text) return;
 
-            const storageKey = getProfileStorageKey();
-            let comments = JSON.parse(localStorage.getItem(storageKey) || "[]");
-            comments.push({ text, author: currentUser.nickname, authorId: currentUser.id });
-            localStorage.setItem(storageKey, JSON.stringify(comments));
+            let comments = JSON.parse(localStorage.getItem(getStorageKey()) || "[]");
+            comments.push({ text, author: currentUser.nickname });
+            localStorage.setItem(getStorageKey(), JSON.stringify(comments));
 
             input.value = "";
             closeProfileModal();
-            loadProfileComments();
-        }
-
-        function deleteProfileComment(index) {
-            const storageKey = getProfileStorageKey();
-            let comments = JSON.parse(localStorage.getItem(storageKey) || "[]");
-            comments.splice(index, 1);
-            localStorage.setItem(storageKey, JSON.stringify(comments));
             loadProfileComments();
         }
 
