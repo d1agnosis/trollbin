@@ -213,7 +213,6 @@
             toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
         }
 
-        // Получаем текущего пользователя из localStorage
         function getCurrentUser() {
             try {
                 const userStr = localStorage.getItem('currentUser') || localStorage.getItem('user');
@@ -254,7 +253,6 @@
             window.location.href = "index.html";
         }
 
-        // Загружаем данные профиля с сервера
         document.addEventListener("DOMContentLoaded", async function() {
             updateHeaderAuth();
 
@@ -262,7 +260,6 @@
             let profileId = urlParams.get('id');
             const currentUser = getCurrentUser();
 
-            // Если в ссылке нет ID, но пользователь залогинен — берем его ID
             if (!profileId && currentUser) {
                 profileId = String(currentUser.id || currentUser._id);
             }
@@ -277,8 +274,8 @@
             }
 
             try {
-                // Запрос к серверу за данными пользователя
-                const response = await fetch(`/api/users/${profileId}`);
+                // ИСПРАВЛЕН ЗАПРОС: передаем id через query-параметр вместо слэша
+                const response = await fetch(`/api/users?id=${profileId}`);
                 if (!response.ok) throw new Error(`Не удалось получить данные (Статус: ${response.status})`);
                 
                 const user = await response.json();
@@ -295,14 +292,12 @@
                     document.getElementById('pBio').textContent = user.bio;
                 }
 
-                // Баннер
                 if (user.banner && user.banner.trim() !== '') {
                     bannerElement.style.backgroundImage = `url('${user.banner}')`;
                 } else {
                     bannerElement.style.background = '#151515';
                 }
 
-                // Аватарка (исправлен баг с присвоением переменной)
                 if (user.avatar && user.avatar.trim() !== '') {
                     avatarContainer.innerHTML = `<img class="profile-avatar" src="${user.avatar}" alt="Avatar">`;
                 } else {
@@ -310,7 +305,6 @@
                     avatarContainer.innerHTML = `<div class="profile-avatar">${firstLetter}</div>`;
                 }
 
-                // Кнопка настроек показывается, только если это ваш профиль
                 if (currentUser) {
                     const currentUid = String(currentUser.id || currentUser._id);
                     if (currentUid === String(profileId)) {
