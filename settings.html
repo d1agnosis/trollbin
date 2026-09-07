@@ -13,7 +13,6 @@
         .form-group input[type="text"], .form-group textarea { width: 100%; padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; color: #fff; font-family: Arial, sans-serif; box-sizing: border-box; }
         .form-group textarea { resize: vertical; height: 100px; }
         
-        /* Стили для кастомной кнопки выбора файла */
         .file-upload-wrapper {
             display: flex;
             align-items: center;
@@ -48,13 +47,11 @@
             word-break: break-all;
         }
 
-        /* Стили для выбора цвета */
         .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
         .form-group input[type="color"] { -webkit-appearance: none; border: none; width: 40px; height: 40px; border-radius: 4px; cursor: pointer; background: none; }
         .form-group input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         .form-group input[type="color"]::-webkit-color-swatch { border: 1px solid #333; border-radius: 4px; }
 
-        /* Стили для кнопок сброса */
         .reset-btn { background: transparent; border: 1px solid #ff3333; color: #ff3333; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 8px; transition: 0.2s; }
         .reset-btn:hover { background: #220000; }
 
@@ -119,7 +116,7 @@
         let currentUserId = null;
 
         document.addEventListener("DOMContentLoaded", function() {
-            currentUserId = localStorage.getItem('currentUserId');
+            currentUserId = localStorage.getItem('currentUserId') || (JSON.parse(localStorage.getItem('currentUser') || '{}')).id;
             if (!currentUserId) {
                 window.location.href = 'login.html';
                 return;
@@ -166,40 +163,57 @@
                 }
             });
 
-            // Сохранение
-            document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            // Сохранение изменений
+            document.getElementById('settingsForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                let usersList = JSON.parse(localStorage.getItem('users') || '[]');
-                let currentUser = usersList.find(u => String(u.id) === String(currentUserId));
-                
-                if (currentUser) {
-                    currentUser.nickname = document.getElementById('nicknameInput').value.trim();
-                    currentUser.nicknameColor = document.getElementById('nicknameColorInput').value;
-                    currentUser.avatar = newAvatarBase64;
-                    currentUser.banner = newBannerBase64;
-                    currentUser.bio = document.getElementById('bioInput').value.trim();
+                const updatedData = {
+                    id: currentUserId,
+                    nickname: document.getElementById('nicknameInput').value.trim(),
+                    nicknameColor: document.getElementById('nicknameColorInput').value,
+                    avatar: newAvatarBase64,
+                    banner: newBannerBase64,
+                    bio: document.getElementById('bioInput').value.trim()
+                };
+
+                try {
+                    // Отправка данных на бэкенд Vercel
+                    const response = await fetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updatedData)
+                    });
+
+                    if (!response.ok) {
+                        console.warn("Сервер недоступен или ответил с ошибкой, сохраняем локально");
+                    }
+
+                    // Дублируем в localStorage для мгновенного отображения в интерфейсе
+                    let usersList = JSON.parse(localStorage.getItem('users') || '[]');
+                    let currentUser = usersList.find(u => String(u.id) === String(currentUserId));
                     
-                    localStorage.setItem('users', JSON.stringify(usersList));
+                    if (currentUser) {
+                        Object.assign(currentUser, updatedData);
+                        localStorage.setItem('users', JSON.stringify(usersList));
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    }
                     
                     alert('Изменения успешно сохранены!');
-                    window.location.href = 'profile.html?id=' + currentUser.id;
-                } else {
-                    alert('Ошибка: пользователь не найден в базе данных!');
+                    window.location.href = 'profile.html?id=' + currentUserId;
+                } catch (err) {
+                    console.error(err);
+                    alert('Ошибка при сохранении изменений.');
                 }
             });
         });
 
-        // Функции сброса
         function resetAvatar() {
             newAvatarBase64 = '';
             document.getElementById('avatarFile').value = '';
             document.getElementById('avatarFileName').textContent = 'Файл не выбран';
             
-            if (!currentUserId) currentUserId = localStorage.getItem('currentUserId');
             let usersList = JSON.parse(localStorage.getItem('users') || '[]');
             let currentUser = usersList.find(u => String(u.id) === String(currentUserId));
-            
             if (currentUser) {
                 currentUser.avatar = '';
                 localStorage.setItem('users', JSON.stringify(usersList));
@@ -212,10 +226,8 @@
             document.getElementById('bannerFile').value = '';
             document.getElementById('bannerFileName').textContent = 'Файл не выбран';
             
-            if (!currentUserId) currentUserId = localStorage.getItem('currentUserId');
             let usersList = JSON.parse(localStorage.getItem('users') || '[]');
             let currentUser = usersList.find(u => String(u.id) === String(currentUserId));
-            
             if (currentUser) {
                 currentUser.banner = '';
                 localStorage.setItem('users', JSON.stringify(usersList));
