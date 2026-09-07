@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrollBin - Просмотр пасты</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding-top: 80px;
+        }
+
+        /* Выдвижное меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background: #111;
+            border-right: 1px solid #ff3333;
+            z-index: 2000;
+            transition: left 0.3s ease;
+            box-sizing: border-box;
+            padding: 60px 20px 20px 20px;
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .sidebar-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #0d0d0d;
+            color: #ff3333;
+            border: 1px solid #331111;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 2001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .sidebar.open ~ .sidebar-toggle {
+            left: 250px;
+            border-left: 1px solid #331111;
+            border-radius: 0 4px 4px 0;
+        }
+        .sidebar-toggle:hover {
+            border-color: #ff3333;
+            background: #141414;
+        }
+        .sidebar-nav-link {
+            display: block;
+            color: #888888;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.2s ease;
+        }
+        .sidebar-nav-link.logo {
+            color: #ff3333;
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+        .sidebar-nav-link:hover {
+            color: #ff3333;
+        }
+
+        /* Контейнер просмотра пасты */
+        .hunt-view-container {
+            max-width: 800px;
+            margin: 20px auto 40px auto;
+            background: #111;
+            border: 1px solid #ff3333;
+            padding: 30px;
+            box-sizing: border-box;
+            font-family: monospace;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.15);
+        }
+
+        .paste-title {
+            color: #ff3333;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 0;
+            word-break: break-all;
+        }
+
+        .paste-meta {
+            font-size: 12px;
+            color: #888;
+            border-bottom: 1px solid #331111;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .paste-content {
+            background: #0d0d0d;
+            border: 1px solid #222;
+            padding: 15px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        /* Раздел комментариев */
+        .comments-section {
+            border-top: 1px solid #331111;
+            padding-top: 20px;
+        }
+
+        .comments-title {
+            color: #ff3333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px;
+            font-family: monospace;
+            box-sizing: border-box;
+            resize: vertical;
+            height: 80px;
+            margin-bottom: 10px;
+        }
+
+        .comment-form textarea:focus {
+            border-color: #ff3333;
+            outline: none;
+        }
+
+        .comment-btn {
+            background: #ff3333;
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: monospace;
+            border-radius: 2px;
+            transition: 0.2s;
+        }
+
+        .comment-btn:hover {
+            background: #ff5555;
+        }
+
+        .comments-list {
+            margin-top: 20px;
+        }
+
+        .comment-item {
+            background: #0d0d0d;
+            border: 1px solid #221111;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .comment-header {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .comment-author a {
+            color: #ff3333;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .comment-author a:hover {
+            text-decoration: underline;
+        }
+
+        .comment-text {
+            font-size: 13px;
+            color: #ccc;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .error-msg {
+            color: #ff3333;
+            text-align: center;
+            font-family: monospace;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Выдвижное левое меню -->
+<div id="leftSidebar" class="sidebar">
+    <a href="index.html" class="sidebar-nav-link logo">Trollbin</a>
+    <a href="index.html" class="sidebar-nav-link">Home</a>
+    <a href="hunt.html" class="sidebar-nav-link" style="color: #ff3333;">Hunting</a>
+    <a href="price.html" class="sidebar-nav-link">Price</a>
+    <a href="addcard.html" class="sidebar-nav-link">Add card</a>
+    <a href="chat.html" class="sidebar-nav-link">Chat</a>
+</div>
+
+<!-- Кнопка открытия/закрытия бокового меню -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">&#10095;</button>
+
+<!-- Верхняя панель справа (Auth) с линией снизу -->
+<div style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 1000; pointer-events: none; border-bottom: 1px solid #331111; background: #0d0d0d;">
+    <div style="position: relative; width: 100%; height: 100%;">
+        <div id="authMenu" style="position: absolute; top: 50%; transform: translateY(-50%); right: 65px; font-family: monospace; display: inline-flex; gap: 8px; align-items: center; pointer-events: auto;"></div>
+    </div>
+</div>
+
+<!-- Основной блок просмотра -->
+<div id="pasteViewContainer" class="hunt-view-container">
+    Загрузка пасты...
+</div>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('leftSidebar');
+    const toggleBtn = document.querySelector('.sidebar-toggle');
+    sidebar.classList.toggle('open');
+    toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+let currentUsername = "Anonymous";
+
+document.addEventListener("DOMContentLoaded", function() {
+    const m = document.getElementById('authMenu');
+    const id = localStorage.getItem('currentUserId');
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    
+    if (id) {
+        const u = users.find(x => String(x.id) === String(id));
+        if (u) {
+            currentUsername = u.nickname;
+            m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+            document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                localStorage.removeItem('currentUserId');
+                location.reload();
+            });
+        }
+    } else {
+        m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const pasteId = urlParams.get('id');
+
+    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
+    const pasteIndex = hunts.findIndex(h => h.id === pasteId);
+    const container = document.getElementById('pasteViewContainer');
+
+    if (pasteIndex === -1) {
+        container.innerHTML = '<div class="error-msg">Паста не найдена или была удалена.</div>';
+        return;
+    }
+
+    let paste = hunts[pasteIndex];
+
+    paste.views = (paste.views || 0) + 1;
+    hunts[pasteIndex] = paste;
+    localStorage.setItem('hunts', JSON.stringify(hunts));
+
+    renderPaste(paste);
+});
+
+function renderPaste(paste) {
+    const container = document.getElementById('pasteViewContainer');
+    const commentsKey = 'comments_' + paste.id;
+    let comments = JSON.parse(localStorage.getItem(commentsKey) || '[]');
+
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    let authorId = paste.authorId;
+    if (!authorId) {
+        const foundUser = users.find(u => u.nickname === paste.author);
+        if (foundUser) authorId = foundUser.id;
+    }
+
+    let authorMarkup = escapeHtml(paste.author || 'Anonymous');
+    if (authorId) {
+        authorMarkup = `<a href="profile.html?id=${authorId}" style="color: #ff3333; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(paste.author)}</a>`;
+    }
+
+    container.innerHTML = `
+        <h1 class="paste-title">${escapeHtml(paste.title)}</h1>
+        <div class="paste-meta">
+            <span>Автор: <strong style="color: #ccc;">${authorMarkup}</strong></span>
+            <span>Дата: ${paste.date || 'Неизвестно'}</span>
+            <span>Просмотров: ${paste.views}</span>
+        </div>
+        <div class="paste-content">${escapeHtml(paste.content)}</div>
+
+        <div class="comments-section">
+            <div class="comments-title">Комментарии (${comments.length})</div>
+            <div class="comment-form">
+                <textarea id="commentInput" placeholder="Написать комментарий..."></textarea>
+                <button class="comment-btn" onclick="addComment('${paste.id}')">Отправить</button>
+            </div>
+            <div class="comments-list" id="commentsList"></div>
+        </div>
+    `;
+
+    renderComments(comments, paste.id);
+}
+
+function renderComments(comments, pasteId) {
+    const list = document.getElementById('commentsList');
+    
+    if (comments.length === 0) {
+        list.innerHTML = '<div style="color: #555; font-size: 12px;">Пока нет комментариев. Будьте первыми!</div>';
+        return;
+    }
+
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const currentUserId = localStorage.getItem('currentUserId');
+
+    list.innerHTML = comments.map(c => {
+        let authorId = c.authorId;
+        if (!authorId) {
+            const foundUser = users.find(u => u.nickname === c.author);
+            if (foundUser) authorId = foundUser.id;
+        }
+
+        let authorMarkup = escapeHtml(c.author);
+        if (authorId) {
+            authorMarkup = `<a href="profile.html?id=${authorId}">${escapeHtml(c.author)}</a>`;
+        }
+
+        let deleteBtnHtml = '';
+        if (currentUserId && c.authorId && String(currentUserId) === String(c.authorId)) {
+            deleteBtnHtml = `<button onclick="deleteComment('${pasteId}', '${c.id}')" style="background: transparent; border: none; color: #ff3333; cursor: pointer; font-size: 11px; font-family: monospace; text-decoration: underline; padding: 0;">Удалить</button>`;
+        }
+
+        return `
+            <div class="comment-item" id="comment_${c.id}">
+                <div class="comment-header">
+                    <span class="comment-author">${authorMarkup}</span>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span>${c.date}</span>
+                        ${deleteBtnHtml}
+                    </div>
+                </div>
+                <div class="comment-text">${escapeHtml(c.text)}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function addComment(pasteId) {
+    const input = document.getElementById('commentInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const currentUserId = localStorage.getItem('currentUserId');
+    const commentsKey = 'comments_' + pasteId;
+    let comments = JSON.parse(localStorage.getItem(commentsKey) || '[]');
+
+    const newComment = {
+        id: 'comm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        author: currentUsername,
+        authorId: currentUserId || null,
+        text: text,
+        date: new Date().toLocaleString()
+    };
+
+    comments.push(newComment);
+    localStorage.setItem(commentsKey, JSON.stringify(comments));
+
+    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
+    const pasteIndex = hunts.findIndex(h => h.id === pasteId);
+    if (pasteIndex !== -1) {
+        hunts[pasteIndex].commentsCount = comments.length;
+        localStorage.setItem('hunts', JSON.stringify(hunts));
+    }
+
+    input.value = '';
+    renderComments(comments, pasteId);
+    
+    document.querySelector('.comments-title').textContent = `Комментарии (${comments.length})`;
+}
+
+function deleteComment(pasteId, commentId) {
+    if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) return;
+
+    const commentsKey = 'comments_' + pasteId;
+    let comments = JSON.parse(localStorage.getItem(commentsKey) || '[]');
+    
+    comments = comments.filter(c => c.id !== commentId);
+    localStorage.setItem(commentsKey, JSON.stringify(comments));
+
+    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
+    const pasteIndex = hunts.findIndex(h => h.id === pasteId);
+    if (pasteIndex !== -1) {
+        hunts[pasteIndex].commentsCount = comments.length;
+        localStorage.setItem('hunts', JSON.stringify(hunts));
+    }
+
+    renderComments(comments, pasteId);
+    document.querySelector('.comments-title').textContent = `Комментарии (${comments.length})`;
+}
+</script>
+</body>
+</html>

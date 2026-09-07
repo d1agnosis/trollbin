@@ -1,0 +1,184 @@
+body {
+    background-color: #0d0d0d;
+    color: #ff3333; /* Заменили зеленый на красный */
+    font-family: 'Courier New', Courier, monospace;
+    margin: 0;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+}
+
+.ascii-troll {
+    color: #ff3333;
+    font-size: 10px;
+    line-height: 10px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+h1 {
+    margin: 5px 0;
+    letter-spacing: 2px;
+    color: #ff3333; /* Красный заголовок */
+}
+
+.subtitle {
+    color: #888;
+    font-size: 14px;
+}
+
+.search-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+#searchInput {
+    background-color: #1a1a1a;
+    border: 1px solid #ff3333; /* Красная обводка поиска */
+    color: #fff;
+    padding: 12px 15px;
+    width: 100%;
+    max-width: 500px;
+    font-family: monospace;
+    font-size: 16px;
+}
+
+#searchInput:focus {
+    outline: none;
+    box-shadow: 0 0 10px rgba(255, 51, 51, 0.4); /* Красное свечение при клике */
+}
+
+.troll-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.troll-card {
+    background-color: #141414;
+    border: 1px solid #333;
+    padding: 15px;
+    display: flex;
+    gap: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.troll-card:hover {
+    border-color: #ff3333; /* Красная обводка карточки при наведении */
+    box-shadow: 0 0 10px rgba(255, 51, 51, 0.2);
+    transform: translateY(-2px);
+}
+
+.troll-card img {
+    width: 70px;
+    height: 70px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #555;
+}
+
+.troll-info h3 {
+    margin: 0 0 5px 0;
+    color: #ff3333;
+}
+
+.platform {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.platform.tg { background-color: #0088cc; color: #fff; }
+.platform.dc { background-color: #5865F2; color: #fff; }
+
+.bio-snippet {
+    font-size: 12px;
+    color: #aaa;
+    margin: 8px 0 0 0;
+}
+
+.profile-container {
+    display: flex;
+    justify-content: center;
+}
+
+.profile-box {
+    background-color: #141414;
+    border: 1px solid #ff3333; /* Красная рамка профиля */
+    padding: 30px;
+    max-width: 600px;
+    width: 100%;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border: 2px solid #ff3333; /* Красная рамка аватара */
+    margin-bottom: 15px;
+}
+
+.dox-line {
+    border: 0;
+    border-top: 1px solid #333;
+    margin: 20px 0;
+}
+
+.profile-bio {
+    background-color: #0a0a0a;
+    padding: 15px;
+    border-left: 3px solid #ff3333;
+    color: #ddd;
+    white-space: pre-wrap;
+}
+
+.back-btn {
+    color: #ff3333;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+.back-btn:hover {
+    text-decoration: underline;
+}
+.profile-card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 4px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    max-width: 300px;
+    font-family: Arial, sans-serif;
+    color: #e0e0e0;
+}
+.card-avatar {
+    width: 50px;
+    height: 50px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 4px;
+    object-fit: cover;
+}
+.card-info h3 { margin: 0 0 5px 0; font-size: 16px; color: #61b5ff; }
+.card-id { margin: 0 0 10px 0; font-size: 12px; color: #888; }
+.card-btn {
+    display: inline-block;
+    background: transparent;
+    border: 1px solid #333;
+    color: #aaa;
+    padding: 3px 10px;
+    border-radius: 3px;
+    text-decoration: none;
+    font-size: 11px;
+}
+.card-btn:hover { border-color: #61b5ff; color: #61b5ff; }

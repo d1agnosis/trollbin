@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrollBin - База данных троллей</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Делаем body гибким контейнером на всю высоту экрана */
+        html, body {
+            height: 100%;
+            margin: 0;
+            background-color: #0b0b0b;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        main {
+            flex: 1; /* Растягивает блок контента, заставляя подвал уходить вниз */
+        }
+
+        /* Стили для выдвигающегося слева меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background: #111;
+            border-right: 1px solid #ff3333;
+            z-index: 2000;
+            transition: left 0.3s ease;
+            box-sizing: border-box;
+            padding: 60px 20px 20px 20px;
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .sidebar-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #0d0d0d;
+            color: #ff3333;
+            border: 1px solid #331111;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 2001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .sidebar.open ~ .sidebar-toggle {
+            left: 250px;
+            border-left: 1px solid #331111;
+            border-radius: 0 4px 4px 0;
+        }
+        .sidebar-toggle:hover {
+            border-color: #ff3333;
+            background: #141414;
+        }
+        .sidebar-nav-link {
+            display: block;
+            color: #888888;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.2s ease;
+        }
+        .sidebar-nav-link.logo {
+            color: #ff3333;
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+        .sidebar-nav-link:hover {
+            color: #ff3333;
+        }
+
+        /* Стили для кнопки НАВЕРХ */
+        .top-btn {
+            background: #0d0d0d;
+            color: #ff3333;
+            border: 1px solid #331111;
+            padding: 4px 10px;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .top-btn:hover {
+            border-color: #ff3333;
+            background: #141414;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="leftSidebar" class="sidebar">
+    <a href="index.html" class="sidebar-nav-link logo">Trollbin</a>
+    <a href="index.html" class="sidebar-nav-link">Home</a>
+    <a href="hunt.html" class="sidebar-nav-link">Hunting</a>
+    <a href="price.html" class="sidebar-nav-link">Price</a>
+    <a href="addcard.html" class="sidebar-nav-link">Add card</a>
+    <a href="chat.html" class="sidebar-nav-link">Chat</a>
+</div>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()">&#10095;</button>
+
+<div style="position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; pointer-events: none; border-bottom: 1px solid #331111; background: #0d0d0d;">
+    <div style="position: relative; width: 100%; height: 60px;">
+        <div id="authMenu" style="position: absolute; top: 50%; transform: translateY(-50%); right: 65px; font-family: monospace; display: inline-flex; gap: 8px; align-items: center; pointer-events: auto;"></div>
+
+        <button onclick="openModal()" style="
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 20px;
+            background: #0d0d0d;
+            color: #ff3333;
+            border: 1px solid #331111;
+            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            pointer-events: auto;
+        " onmouseover="this.style.borderColor='#ff3333'; this.style.background='#141414';" onmouseout="this.style.borderColor='#331111'; this.style.background='#0d0d0d';">?</button>
+    </div>
+</div>
+
+<div id="infoModal" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+">
+    <div style="
+        background: #0f0f0f;
+        border: 1px solid #ff3333;
+        padding: 30px;
+        max-width: 400px;
+        width: 90%;
+        font-family: monospace;
+        color: #ccc;
+        text-align: left;
+        position: relative;
+    ">
+        <h3 style="color: #ff3333; margin-top: 0; text-align: center;">О ПРОЕКТЕ</h3>
+        <p style="font-size: 13px; line-height: 1.5;">
+            <strong>TrollBin</strong> — это архив интернет-троллей и персонажей из Telegram и Discord и других платформ. Здесь собрана информация, досье и разоблачения деструктивных личностей и кланов.
+        </p>
+        <p style="font-size: 13px; line-height: 1.5; color: #888;">
+            База данных обновляется автоматически. Все материалы носят информационный характер, овнер не берет на себя ответственность за все последствия.
+        </p>
+        
+        <button onclick="closeModal()" style="
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            background: #220000;
+            color: #ff3333;
+            border: 1px solid #ff3333;
+            padding: 8px;
+            font-family: monospace;
+            cursor: pointer;
+            font-weight: bold;
+        ">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<header style="text-align: center; margin-bottom: 30px; position: relative; margin-top: 60px;">
+    <pre style="text-align: center; font-family: 'Courier New', monospace; font-size: 7px; line-height: 7px; color: #ff3333; text-shadow: 1px 1px 3px rgba(255, 51, 51, 0.5);">
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⣤⣤⣤⣤⣴⡶⠶⠶⠶⠶⠶⠶⠶⠶⠤⠤⢤⣤⣤⣤⣤⣤⣄⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⠟⠋⠀⠀⠀⠀⢀⣀⠤⠖⠚⢉⣉⣉⣉⣉⣀⠀⠀⠀⠀⠀⠀⠈⠉⠩⠛⠛⠛⠻⠷⣦⣄⡀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣠⡿⠋⠀⠀⠀⣀⠤⠒⣉⠤⢒⣊⡉⠠⠤⠤⢤⡄⠈⠉⠉⠀⠂⠀⠀⠐⠂⠀⠉⠉⠉⠉⠂⠀⠙⠻⣶⣄⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣰⡿⠁⠀⠀logo⠊⢀⠔⣫⠔⠊⠁⠀⠀⠀⠀⠀⠀⠙⡄⠀⠀⠀⠀⠀⠘⣩⠋⠀⠀⠀⠉⠳⣄⠀⠀⠀⠈⢻⡇⠀⠀⠀
+⠀⠀⠀⠀⠀⣰⡿⠁⠀⠀⠀⠀⠀⠁⠜⠁⣀⣤⣶⣶⣶⣤⣤⣀⠀⠃⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠈⠈⠆⠀⠀⠀⠸⣧⡀⠀⠀
+⠀⠀⠀⣠⣾⣿⣥⠤⢄⡀⠀⢠⣤⠔⢠⣾⣿⣿⣿⣿⣿⣯⣄⡈⠙⢿⣦⠀⠀⠀⠀⡀⢀⣤⣶⣿⣿⣿⣿⣿⣦⠀⣀⣀⣀⣀⡙⢿⣦⡀
+⠀⣠⡾⣻⠋⢀⣠⣴⠶⠾⢶⣤⣄⡚⠉⠉⠉⠁⣠⣼⠏⠉⠙⠛⠷⡾⠛⠀⠀⠀⠘⠛⢿⡟⠛⠋⠉⠉⠉⠁⠀⠀⠀⠀⠀⠦⣝⠦⡙⣿
+⢰⡟⠁⡇⢠⣾⠋⠀⠀⣼⣄⠉⠙⠛⠷⠶⠶⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣇⠀⠀⠀⠠⣦⣄⣴⡾⢛⡛⠻⠷⠘⡄⢸⣿
+⢸⡇⠀⡇⢸⣇⢀⣤⣴⣿⠻⠷⣦⣄⣀⠀⠀⠀⢀⡀⠀⣀⠰⣤⡶⠶⠆⠀⠀⠀⠀⠀⠈⠛⢿⣦⣄⠀⠈⠉⠉⠁⢸⣇⠀⠀⣠⠃⢸⣿
+⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⣾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
+⠀⠙⢿⣌⡑⠲⠄⠀⠀⠙⢿⣿⣶⣦⣼⣿⣄⠀⠈⠉⠛⠻⣿⣶⣯⣤⣀⣀⡀⠀⠘⠿⠾⠟⠁⠀⠀⢀⣀⣤⣾⣿⢿⣿⣇⠀⠀⣼⡟⠀
+⠀⠀⠀⠹⣿⣇⠀⠀⠀⠀⠈⢻⣦⠈⠙⣿⣿⣷⣶⣤⣄⣠⣿⠁⠀⠈⠉⠙⢻⡟⠛⠻⠿⣿⠿⠛⠛⢻⣿⠁⢈⣿⣨⣿⣿⠀⢰⡿⠀⠀
+⠀⠀⠀⠀⠈⢻⣇⠀⠀⠀⠀⠀⠙⢷⣶⡿⠀⠈⠙⠛⠿⣿⣿⣶⣶⣦⣤⣤⣼⣧⣤⣤⣤⣿⣦⣤⣤⣶⣿⣷⣾⣿⣿⣿⡟⠀⢸⡇⠀⠀
+⠀⠀⠀⠀⠀⠈⢿⣦⠀⠀⠀⠀⠀⠀⠙⢷*_⡀⠀⠀⢀⣿⠁⠉⠙⠛⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⢸⣷⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠙⢷⣄⠀⢀⡀⠀⣀⡀⠈⠻⢷⣦⣾⡃⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⢹⡟⠉⠉⣿⠏⢡⣿⠃⣾⣷⡿⠁⠀⠘⣿⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢷⣤⣉⠒⠤⣉⠓⠦⣀⡈⠉⠛⠿⠶⢶⣤⣤⣾⣧⣀⣀⣀⣿⣄⣠⣼⣿⣤⣿⠷⠾⠟⠋⠀⠀⠀⠀⣿⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠿⣶⣄⡉⠒⠤⢌⣑⠲⠤⣀⡀⠀⠀⠀⠈⠍⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⣠⠏⠀⢰⠀⠀⣿⡄⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠛⠿⢷⣦⣄⡉⠑⠒⠪⠭⢄⣀⣀⠀⠐⠒⠒⠒⠒⠀⠀⠐⠒⠊⠉⠀⢀⡠⠚⠀⠀⢸⡇⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠻⢷*_⣀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠓⠒⠒⠒⠊⠁⠀⠀⠀⢠⣿⠃⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠛⠛⠷⠶⣶⣦⣄⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣴⠟⠁⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠙⠛⠛⠷⠶⠶⠶⠶⠶⠾⠛⠛⠉⠀⠀⠀⠀⠀
+    </pre>
+    <h1>TROLLBIN ARCHIVE</h1>
+    <div style="
+        display: inline-block;
+        background-color: #220000;
+        color: #ff3333;
+        border: 1px solid #ff3333;
+        padding: 4px 10px;
+        font-family: monospace;
+        font-size: 10px;
+        font-weight: bold;
+        margin-bottom: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 10px;
+    ">
+        Warning: 18+ Content
+    </div>
+    <p class="subtitle">Telegram & Discord Troll Directory</p>
+</header>
+
+<main>
+    <div style="text-align: center; margin-top: -15px; margin-bottom: 30px;">
+        <div style="font-size: 12px; color: #ff3333; margin-bottom: 6px; font-weight: bold;">SEARCH BY NICKNAME</div>
+        <input type="text" id="searchInput" placeholder="Введите ник тролля для поиска..." style="width: 100%; max-width: 400px; padding: 9px 12px; background: #0d0d0d; border: 1px solid #331111; color: #fff; border-radius: 4px; box-sizing: border-box; outline: none; font-family: monospace;">
+        <div style="margin-top: 8px; font-size: 12px; color: #777;">
+            Всего профилей в архиве: <span id="profilesCount" style="color: #ff3333; font-weight: bold;">0</span>
+        </div>
+    </div>
+
+    <div id="usersListContainer" style="display: flex; flex-wrap: wrap; gap: 10px; max-width: 950px; margin: 0 auto; justify-content: center;"></div>
+
+    <style>
+    .archive-user-card {
+        background: #0d0d0d;
+        border: 1px solid #331111;
+        border-radius: 4px;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: #e0e0e0;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+        width: calc(33.333% - 8px);
+        min-width: 260px;
+    }
+    .archive-user-card:hover {
+        border-color: #ff3333;
+    }
+    .archive-card-avatar {
+        width: 35px;
+        height: 35px;
+        background: #1a1a1a;
+        border: 1px solid #331111;
+        border-radius: 3px;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+    .archive-card-letter {
+        background: #220000;
+        border: 1px solid #ff3333;
+        color: #ff3333;
+        font-family: monospace;
+        font-size: 16px;
+        font-weight: bold;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+    }
+    .archive-card-info h4 {
+        margin: 0 0 2px 0;
+        font-size: 13px;
+        color: #ff4d4d;
+    }
+    .archive-card-info p {
+        margin: 0;
+        font-size: 11px;
+        color: #777;
+    }
+    </style>
+</main>
+
+<footer style="margin-top: 50px; padding: 25px 0; border-top: 1px solid #331111; font-size: 12px; color: #888; text-align: center; width: 100%;">
+    <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 40px; max-width: 900px; margin: 0 auto; padding: 0 20px;">
+        <div style="text-align: center;">
+            <h3 style="color: #ff3333; font-size: 13px; margin: 0 0 5px 0;">TROLLBIN</h3>
+            <p style="margin: 3px 0;">Архив интернет-троллей<br>и персонажей Telegram & Discord.</p>
+        </div>
+        <div style="text-align: center;">
+            <h3 style="color: #ff3333; font-size: 13px; margin: 0 0 5px 0;">КОНТАКТЫ</h3>
+            <p style="margin: 3px 0;">По вопросам связи и жалоб:</p>
+            <a href="mailto:hellcoveredinice@gmail.com" style="color: #00d2ff; text-decoration: none;">hellcoveredinice@gmail.com</a>
+        </div>
+        <div style="text-align: center;">
+            <h3 style="color: #ff3333; font-size: 13px; margin: 0 0 5px 0;">ИНФОРМАЦИЯ</h3>
+            <p style="margin: 3px 0;">База данных обновляется автоматически.</p>
+            <button onclick="scrollToTop()" class="top-btn" style="margin-top: 6px;">НАВЕРХ &uarr;</button>
+        </div>
+    </div>
+    <p style="margin: 20px 0 0 0; color: #555; font-size: 10px; text-align: center; width: 100%">&copy; 2026 TrollBin. Все права защищены (или нарушены).</p>
+</footer>
+
+<script>
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function openModal() {
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+    function closeModal() {
+        document.getElementById('infoModal').style.display = 'none';
+    }
+    function toggleSidebar() {
+        const sidebar = document.getElementById('leftSidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        sidebar.classList.toggle('open');
+        if (sidebar.classList.contains('open')) {
+            toggleBtn.innerHTML = '&#10094;';
+        } else {
+            toggleBtn.innerHTML = '&#10095;';
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function() {
+        const container = document.getElementById('usersListContainer');
+        const searchInput = document.getElementById('searchInput');
+        const counter = document.getElementById('profilesCount');
+
+        let users = [];
+
+        // Загрузка данных с бэкенда (MongoDB) вместо localStorage
+        try {
+            const response = await fetch('/api/users');
+            if (response.ok) {
+                users = await response.json();
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки пользователей:', error);
+        }
+
+        function renderCards(list) {
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (counter) {
+                counter.textContent = list.length;
+            }
+            
+            if (list.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #555; font-size: 12px; padding: 10px; width: 100%;">Профили не найдены</div>';
+                return;
+            }
+
+            list.forEach(user => {
+                const card = document.createElement('a');
+                const userId = user.id || user._id;
+                card.href = `profile.html?id=${userId}`;
+                card.className = 'archive-user-card';
+
+                let avatarHTML = '';
+                if (user.avatar && user.avatar.trim() !== '') {
+                    avatarHTML = `<img src="${user.avatar}" class="archive-card-avatar" alt="">`;
+                } else {
+                    const firstLetter = user.nickname ? user.nickname.charAt(0).toUpperCase() : '?';
+                    avatarHTML = `<div class="archive-card-avatar archive-card-letter">${firstLetter}</div>`;
+                }
+
+                card.innerHTML = `
+                    ${avatarHTML}
+                    <div class="archive-card-info">
+                        <h4>${user.nickname}</h4>
+                        <p>ID: ${userId} | Joined: ${user.joined || 'N/A'}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        renderCards(users);
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const query = searchInput.value.trim().toLowerCase();
+                const filtered = users.filter(u => u.nickname.toLowerCase().includes(query));
+                renderCards(filtered);
+            });
+
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const query = searchInput.value.trim().toLowerCase();
+                    const foundUser = users.find(u => u.nickname.toLowerCase() === query);
+                    if (foundUser) {
+                        window.location.href = `profile.html?id=${foundUser.id || foundUser._id}`;
+                    }
+                }
+            });
+        }
+
+        // Авторизация в шапке
+        const m = document.getElementById('authMenu');
+        if (m) {
+            const currentUserId = localStorage.getItem('currentUserId');
+            if (currentUserId) {
+                const u = users.find(x => (x.id === currentUserId || x._id === currentUserId));
+                if (u) {
+                    const uId = u.id || u._id;
+                    m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                    
+                    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                        e.preventDefault();
+                        localStorage.removeItem('currentUserId');
+                        location.reload();
+                    });
+                    return;
+                }
+            }
+            m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+        }
+    });
+</script>
+</body>
+</html>

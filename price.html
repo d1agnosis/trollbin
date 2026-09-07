@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price - TrollBin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 80px 20px 20px 20px;
+            /* Центрируем страницу по вертикали и горизонтали, чтобы карточки были ровно посередине экрана */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* Стили для выдвигающегося слева меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background: #111;
+            border-right: 1px solid #ff3333;
+            z-index: 2000;
+            transition: left 0.3s ease;
+            box-sizing: border-box;
+            padding: 60px 20px 20px 20px;
+            font-family: Arial, sans-serif;
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        /* Аккуратная минималистичная кнопка-стрелочка */
+        .sidebar-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #0d0d0d;
+            color: #ff3333;
+            border: 1px solid #331111;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 2001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        /* Когда меню открыто, кнопка аккуратно смещается вместе с краем */
+        .sidebar.open ~ .sidebar-toggle {
+            left: 250px;
+            border-left: 1px solid #331111;
+            border-radius: 0 4px 4px 0;
+        }
+        .sidebar-toggle:hover {
+            border-color: #ff3333;
+            background: #141414;
+        }
+        .sidebar-nav-link {
+            display: block;
+            color: #888888;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.2s ease;
+        }
+        .sidebar-nav-link.logo {
+            color: #ff3333;
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+        .sidebar-nav-link:hover {
+            color: #ff3333;
+        }
+
+        .price-container {
+            text-align: center;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .pricing-grid {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .price-card {
+            background: #141414;
+            border: 1px solid #331111;
+            border-radius: 4px;
+            width: 320px;
+            padding: 25px;
+            box-sizing: border-box;
+            text-align: left;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: border-color 0.2s;
+        }
+        .price-card:hover {
+            border-color: #ff3333;
+        }
+
+        .price-header {
+            border-bottom: 1px solid #222;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .price-header h2 {
+            margin: 0;
+            color: #ff3333;
+            font-family: monospace;
+            font-size: 20px;
+        }
+        .price-tag {
+            font-size: 24px;
+            color: #fff;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .price-tag span {
+            font-size: 14px;
+            color: #777;
+            text-decoration: line-through;
+            margin-right: 5px;
+        }
+
+        .price-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 25px 0;
+        }
+        .price-features li {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #aaa;
+            padding: 8px 0;
+            border-bottom: 1px dashed #222;
+            font-family: monospace;
+        }
+        .price-features li span:last-child {
+            font-weight: bold;
+        }
+
+        .price-btn {
+            background: #ff3333;
+            color: #000;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 15px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            box-sizing: border-box;
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+        .price-btn:hover {
+            background: #ff5555;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="leftSidebar" class="sidebar">
+        <a href="index.html" class="sidebar-nav-link logo">Trollbin</a>
+        <a href="index.html" class="sidebar-nav-link">Home</a>
+        <a href="hunt.html" class="sidebar-nav-link">Hunting</a>
+        <a href="price.html" class="sidebar-nav-link" style="color: #ff3333;">Price</a>
+        <a href="addcard.html" class="sidebar-nav-link">Add card</a>
+        <a href="chat.html" class="sidebar-nav-link">Chat</a>
+    </div>
+
+    <button class="sidebar-toggle" onclick="toggleSidebar()">&#10095;</button>
+
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 1000; pointer-events: none; border-bottom: 1px solid #331111; background: #0d0d0d;">
+        <div style="position: relative; width: 100%; height: 100%;">
+            <div id="authMenu" style="position: absolute; top: 50%; transform: translateY(-50%); right: 65px; font-family: monospace; display: inline-flex; gap: 8px; align-items: center; pointer-events: auto;"></div>
+
+            <button onclick="openModal()" style="
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                right: 20px;
+                background: #0d0d0d;
+                color: #ff3333;
+                border: 1px solid #331111;
+                border-radius: 4px;
+                width: 30px;
+                height: 30px;
+                font-family: monospace;
+                font-weight: bold;
+                cursor: pointer;
+                transition: 0.2s;
+                pointer-events: auto;
+            " onmouseover="this.style.borderColor='#ff3333'; this.style.background='#141414';" onmouseout="this.style.borderColor='#331111'; this.style.background='#0d0d0d';">?</button>
+        </div>
+    </div>
+
+    <div class="price-container">
+        <div class="pricing-grid">
+            <div class="price-card">
+                <div>
+                    <div class="price-header">
+                        <h2>Main Page</h2>
+                        <div class="price-tag"><span>$40</span>$25</div>
+                    </div>
+                    <ul class="price-features">
+                        <li><span>Размещение</span> <span style="color: #ff3333;">Главная</span></li>
+                        <li><span>Срок</span> <span>Навсегда</span></li>
+                        <li><span>Оформление</span> <span>Карточка</span></li>
+                        <li><span>Приоритет</span> <span>Обычный</span></li>
+                    </ul>
+                </div>
+                <a href="https://t.me/hellcoveredinice" target="_blank" class="price-btn">Buy Now</a>
+            </div>
+
+            <div class="price-card">
+                <div>
+                    <div class="price-header">
+                        <h2>Hunt Add</h2>
+                        <div class="price-tag"><span>$75</span>$50</div>
+                    </div>
+                    <ul class="price-features">
+                        <li><span>Размещение</span> <span style="color: #ffcc00;">Раздел Hunt</span></li>
+                        <li><span>Срок</span> <span>Навсегда</span></li>
+                        <li><span>Тип цели</span> <span>Карточка цели</span></li>
+                        <li><span>Мониторинг</span> <span>YES</span></li>
+                    </ul>
+                </div>
+                <a href="https://t.me/hellcoveredinice" target="_blank" class="price-btn">Buy Now</a>
+            </div>
+
+            <div class="price-card">
+                <div>
+                    <div class="price-header">
+                        <h2>VIP Promo</h2>
+                        <div class="price-tag"><span>$200</span>$100</div>
+                    </div>
+                    <ul class="price-features">
+                        <li><span>Реклама</span> <span style="color: #00ff66;">Баннер / Пост</span></li>
+                        <li><span>Охват</span> <span>Все страницы</span></li>
+                        <li><span>Эффективность</span> <span>100%</span></li>
+                        <li><span>Закреп</span> <span>YES</span></li>
+                    </ul>
+                </div>
+                <a href="https://t.me/hellcoveredinice" target="_blank" class="price-btn">Buy Now</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="infoModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 3000; justify-content: center; align-items: center;">
+        <div style="background: #0f0f0f; border: 1px solid #ff3333; padding: 30px; max-width: 400px; width: 90%; font-family: monospace; color: #ccc; text-align: left; position: relative;">
+            <h3 style="color: #ff3333; margin-top: 0; text-align: center;">О РАЗДЕЛЕ</h3>
+            <p style="font-size: 13px; line-height: 1.5;">
+                <strong>Price</strong> — это раздел где можно сделать заказ на какую-либо личность - [dox, swat, snos, rat].
+            </p>
+            <p style="font-size: 13px; line-height: 1.5; color: #888;">
+                База данных обновляется автоматически. Все материалы носят информационный характер, овнер не берет на себя ответственность за все последствия.
+            </p>
+            <button onclick="closeModal()" style="display: block; width: 100%; margin-top: 20px; background: #220000; color: #ff3333; border: 1px solid #ff3333; padding: 8px; font-family: monospace; cursor: pointer; font-weight: bold;">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('infoModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('leftSidebar');
+            const toggleBtn = document.querySelector('.sidebar-toggle');
+            sidebar.classList.toggle('open');
+            if (sidebar.classList.contains('open')) {
+                toggleBtn.innerHTML = '&#10094;';
+            } else {
+                toggleBtn.innerHTML = '&#10095;';
+            }
+        }
+
+        function getCurrentUser() {
+            const currentId = localStorage.getItem('currentUserId');
+            if (!currentId) return null;
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            return users.find(u => u.id === currentId) || null;
+        }
+
+        function updateHeaderAuth() {
+            const authMenu = document.getElementById('authMenu');
+            const currentUser = getCurrentUser();
+
+            if (currentUser) {
+                authMenu.innerHTML = `
+                    <a href="profile.html?id=${currentUser.id}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${currentUser.nickname}</a>
+                    <span style="color: #444;">/</span>
+                    <a href="#" onclick="logoutUser(event)" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>
+                `;
+            } else {
+                authMenu.innerHTML = `
+                    <a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a>
+                    <span style="color: #444;">/</span>
+                    <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>
+                `;
+            }
+        }
+
+        function logoutUser(e) {
+            e.preventDefault();
+            localStorage.removeItem('currentUserId');
+            window.location.reload();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            updateHeaderAuth();
+        });
+    </script>
+</body>
+</html>

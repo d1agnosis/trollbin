@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrollBin - База данных троллей</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding-top: 80px;
+        }
+
+        /* Выдвижное меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background: #111;
+            border-right: 1px solid #ff3333;
+            z-index: 2000;
+            transition: left 0.3s ease;
+            box-sizing: border-box;
+            padding: 60px 20px 20px 20px;
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .sidebar-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #0d0d0d;
+            color: #ff3333;
+            border: 1px solid #331111;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 2001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .sidebar.open ~ .sidebar-toggle {
+            left: 250px;
+            border-left: 1px solid #331111;
+            border-radius: 0 4px 4px 0;
+        }
+        .sidebar-toggle:hover {
+            border-color: #ff3333;
+            background: #141414;
+        }
+        .sidebar-nav-link {
+            display: block;
+            color: #888888;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.2s ease;
+        }
+        .sidebar-nav-link.logo {
+            color: #ff3333;
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+        .sidebar-nav-link:hover {
+            color: #ff3333;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Выдвижное меню -->
+<div id="leftSidebar" class="sidebar">
+    <a href="index.html" class="sidebar-nav-link logo">Trollbin</a>
+    <a href="index.html" class="sidebar-nav-link">Home</a>
+    <a href="hunt.html" class="sidebar-nav-link">Hunting</a>
+    <a href="price.html" class="sidebar-nav-link">Price</a>
+    <a href="addcard.html" class="sidebar-nav-link">Add card</a>
+    <a href="chat.html" class="sidebar-nav-link">Chat</a>
+</div>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()">&#10095;</button>
+
+<!-- Верхняя панель -->
+<div style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 1000; pointer-events: none; border-bottom: 1px solid #331111; background: #0d0d0d;">
+    <div style="position: relative; width: 100%; height: 100%;">
+        <div id="authMenu" style="position: absolute; top: 50%; transform: translateY(-50%); right: 65px; font-family: monospace; display: inline-flex; gap: 8px; align-items: center; pointer-events: auto;">
+            <a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a>
+            <span style="color: #444;">/</span>
+            <a href="register.html" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>
+        </div>
+
+        <button onclick="openModal()" style="
+            position: absolute; top: 50%; transform: translateY(-50%); right: 20px; background: #0d0d0d; color: #ff3333; border: 1px solid #331111; border-radius: 4px; width: 30px; height: 30px; font-family: monospace; font-weight: bold; cursor: pointer; transition: 0.2s; pointer-events: auto;
+        " onmouseover="this.style.borderColor='#ff3333'; this.style.background='#141414';" onmouseout="this.style.borderColor='#331111'; this.style.background='#0d0d0d';">?</button>
+    </div>
+</div>
+
+<div id="infoModal" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+">
+    <div style="
+        background: #0f0f0f;
+        border: 1px solid #ff3333;
+        padding: 30px;
+        max-width: 400px;
+        width: 90%;
+        font-family: monospace;
+        color: #ccc;
+        text-align: left;
+        position: relative;
+    ">
+        <h3 style="color: #ff3333; margin-top: 0; text-align: center;">О ПРОЕКТЕ</h3>
+        <p style="font-size: 13px; line-height: 1.5;">
+            <strong>TrollBin</strong> — это архив интернет-троллей и персонажей из Telegram, Discord и других платформ. Здесь собрана информация, досье и разоблачения деструктивных личностей и кланов.
+        </p>
+        <p style="font-size: 13px; line-height: 1.5; color: #888;">
+            База данных обновляется автоматически. Все материалы носят информационный характер, овнер не берет на себя ответственность за все последствия.
+        </p>
+        <button onclick="closeModal()" style="
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            background: #220000;
+            color: #ff3333;
+            border: 1px solid #ff3333;
+            padding: 8px;
+            font-family: monospace;
+            cursor: pointer;
+            font-weight: bold;
+        ">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<div style="max-width: 350px; margin: 120px auto 0 auto; text-align: left; font-family: monospace;">
+    <div style="font-size: 38px; font-weight: bold; margin-bottom: 25px; text-align: center; color: #ff3333; letter-spacing: 2px; text-shadow: 2px 2px 5px rgba(255, 51, 51, 0.4);">Register</div>
+    
+    <div style="font-size: 13px; font-weight: bold; color: #ff3333; margin-bottom: 8px; letter-spacing: 1px; text-align: left;">USERNAME</div>
+    <input type="text" id="regUsername" placeholder="Введите имя пользователя..." style="
+        width: 100%;
+        background: #0b0b0b;
+        border: 2px solid #ff3333;
+        color: #ff3333;
+        padding: 8px 12px;
+        font-size: 14px;
+        outline: none;
+        font-family: monospace;
+        box-sizing: border-box;
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+    ">
+    
+    <div style="font-size: 13px; font-weight: bold; color: #ff3333; margin-bottom: 8px; letter-spacing: 1px; text-align: left;">PASSWORD</div>
+    <input type="password" id="regPassword" placeholder="Введите пароль..." style="
+        width: 100%;
+        background: #0b0b0b;
+        border: 2px solid #ff3333;
+        color: #ff3333;
+        padding: 8px 12px;
+        font-size: 14px;
+        outline: none;
+        font-family: monospace;
+        box-sizing: border-box;
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+    ">
+    
+    <button onclick="registerUser()" style="
+        width: 100%;
+        background: #ff3333;
+        color: #000;
+        border: none;
+        padding: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        font-family: monospace;
+        cursor: pointer;
+        display: block;
+    ">REGISTER</button>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('infoModal').style.display = 'none';
+    }
+
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('infoModal');
+        if (event.target === modal) modal.style.display = 'none';
+    });
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('leftSidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        sidebar.classList.toggle('open');
+        toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
+    }
+
+    // Автоматическая проверка авторизации для шапки
+    document.addEventListener("DOMContentLoaded", function() {
+        const m = document.getElementById('authMenu');
+        const currentUserId = localStorage.getItem('currentUserId');
+        
+        if (currentUserId) {
+            // Если нужно будет подгружать имя пользователя с сервера по ID, здесь можно будет сделать fetch-запрос.
+            // Пока оставляем базовую проверку сессии.
+            m.innerHTML = '<a href="profile.html?id=' + currentUserId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Профиль</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+            
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('currentUserId');
+                    location.reload();
+                });
+            }
+        }
+    });
+
+    async function registerUser() {
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value;
+
+        if (!username || !password) {
+            alert('Заполните все поля!');
+            return;
+        }
+
+        const usernameRegex = /^[a-zA-Z0-9_.]+$/;
+        if (!usernameRegex.test(username)) {
+            alert('Недопустимые символы в никнейме!');
+            return;
+        }
+
+        if (password.length < 8) {
+            alert('Пароль слишком короткий!');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname: username, password: password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message || 'Ошибка регистрации');
+                return;
+            }
+
+            localStorage.setItem('currentUserId', data.userId);
+
+            alert('Регистрация успешна!');
+            window.location.href = 'profile.html?id=' + data.userId;
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка соединения с сервером');
+        }
+    }
+</script>
+</body>
+</html>
