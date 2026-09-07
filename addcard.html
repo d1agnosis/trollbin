@@ -226,7 +226,7 @@
 ⠀⣠⡾⣻⠋⢀⣠⣴⠶⠾⢶⣤⣄⡚⠉⠉⠉⠁⣠⣼⠏⠉⠙⠛⠷⡾⠛⠀⠀⠀⠘⠛⢿⡟⠛⠋⠉⠉⠉⠁⠀⠀⠀⠀⠀⠦⣝⠦⡙⣿
 ⢰⡟⠁⡇⢠⣾⠋⠀⠀⣼⣄⠉⠙⠛⠷⠶⠶⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣇⠀⠀⠀⠠⣦⣄⣴⡾⢛⡛⠻⠷⠘⡄⢸⣿
 ⢸⡇⠀⡇⢸⣇⢀⣤⣴⣿⠻⠷⣦⣄⣀⠀⠀⠀⢀⡀⠀⣀⠰⣤⡶⠶⠆⠀⠀⠀⠀⠀⠈⠛⢿⣦⣄⠀⠈⠉⠉⠁⢸⣇⠀⠀⣠⠃⢸⣿
-⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⾾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
+⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⡾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
 ⠀⠙⢿⣌⡑⠲⠄⠀⠀⠙⢿⣿⣶⣦⣼⣿⣄⠀⠈⠉⠛⠻⣿⣶⣯⣤⣀⣀⡀⠀⠘⠿⠾⠟⠁⠀⠀⢀⣀⣤⣾⣿⢿⣿⣇⠀⠀⣼⡟⠀
 ⠀⠀⠀⠹⣿⣇⠀⠀⠀⠀⠈⢻⣦⠈⠙⣿⣿⣷⣶⣤⣄⣠⣿⠁⠀⠈⠉⠙⢻⡟⠛⠻⠿⣿⠿⠛⠛⢻⣿⠁⢈⣿⣨⣿⣿⠀⢰⡿⠀⠀
 ⠀⠀⠀⠀⠈⢻⣇⠀⠀⠀⠀⠀⠙⢷⣶⡿⠀⠈⠙⠛⠿⣿⣿⣶⣶⣦⣤⣤⣼⣧⣤⣤⣤⣿⣦⣤⣤⣶⣿⣷⣾⣿⣿⣿⡟⠀⢸⡇⠀⠀
@@ -301,21 +301,28 @@ document.addEventListener("DOMContentLoaded", async function() {
         return;
     }
 
-    // Запрос к бэкенду для получения реального никнейма аккаунта
     try {
         const response = await fetch('/api/users/' + currentUserId);
         if (response.ok) {
             const u = await response.json();
-            currentNickname = u.nickname || u.username || ("User_" + currentUserId);
+            console.log("Ответ сервера с данными пользователя:", u);
+            
+            // Если в ответе приходит user_1788816744037, убираем префикс "user_" если он задвоился или берем другое поле
+            let rawNick = u.nickname || u.username || u.name;
+            if (rawNick) {
+                // Избавляемся от дублирования user_user_
+                currentNickname = rawNick.replace(/^user_user_/i, 'user_');
+            } else {
+                currentNickname = "user_" + currentUserId;
+            }
         } else {
-            currentNickname = "User_" + currentUserId;
+            currentNickname = "user_" + currentUserId;
         }
     } catch (err) {
         console.warn('Не удалось загрузить ник с сервера', err);
-        currentNickname = "User_" + currentUserId;
+        currentNickname = "user_" + currentUserId;
     }
 
-    // Отрисовка ссылки на профиль и Logout в шапке
     m.innerHTML = '<a href="profile.html?id=' + currentUserId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + currentNickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
     
     document.getElementById('logoutBtn').addEventListener('click', function(e) {
@@ -341,7 +348,7 @@ function updateAuthorDisplay() {
         displayUser.textContent = "Anonymous";
         toggleBtn.textContent = "от своего имени";
     } else {
-        displayUser.textContent = currentNickname; // Теперь здесь подставляется никнейм аккаунта
+        displayUser.textContent = currentNickname;
         toggleBtn.textContent = "анонимно";
     }
 }
