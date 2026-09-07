@@ -226,7 +226,7 @@
 ⠀⣠⡾⣻⠋⢀⣠⣴⠶⠾⢶⣤⣄⡚⠉⠉⠉⠁⣠⣼⠏⠉⠙⠛⠷⡾⠛⠀⠀⠀⠘⠛⢿⡟⠛⠋⠉⠉⠉⠁⠀⠀⠀⠀⠀⠦⣝⠦⡙⣿
 ⢰⡟⠁⡇⢠⣾⠋⠀⠀⣼⣄⠉⠙⠛⠷⠶⠶⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣇⠀⠀⠀⠠⣦⣄⣴⡾⢛⡛⠻⠷⠘⡄⢸⣿
 ⢸⡇⠀⡇⢸⣇⢀⣤⣴⣿⠻⠷⣦⣄⣀⠀⠀⠀⢀⡀⠀⣀⠰⣤⡶⠶⠆⠀⠀⠀⠀⠀⠈⠛⢿⣦⣄⠀⠈⠉⠉⠁⢸⣇⠀⠀⣠⠃⢸⣿
-⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⣾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
+⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⾾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
 ⠀⠙⢿⣌⡑⠲⠄⠀⠀⠙⢿⣿⣶⣦⣼⣿⣄⠀⠈⠉⠛⠻⣿⣶⣯⣤⣀⣀⡀⠀⠘⠿⠾⠟⠁⠀⠀⢀⣀⣤⣾⣿⢿⣿⣇⠀⠀⣼⡟⠀
 ⠀⠀⠀⠹⣿⣇⠀⠀⠀⠀⠈⢻⣦⠈⠙⣿⣿⣷⣶⣤⣄⣠⣿⠁⠀⠈⠉⠙⢻⡟⠛⠻⠿⣿⠿⠛⠛⢻⣿⠁⢈⣿⣨⣿⣿⠀⢰⡿⠀⠀
 ⠀⠀⠀⠀⠈⢻⣇⠀⠀⠀⠀⠀⠙⢷⣶⡿⠀⠈⠙⠛⠿⣿⣿⣶⣶⣦⣤⣤⣼⣧⣤⣤⣤⣿⣦⣤⣤⣶⣿⣷⣾⣿⣿⣿⡟⠀⢸⡇⠀⠀
@@ -301,12 +301,12 @@ document.addEventListener("DOMContentLoaded", async function() {
         return;
     }
 
-    // Пробуем получить ник с бэкенда, но если не выйдет — используем fallback
+    // Запрос к бэкенду для получения реального никнейма аккаунта
     try {
         const response = await fetch('/api/users/' + currentUserId);
         if (response.ok) {
             const u = await response.json();
-            currentNickname = u.nickname || ("User_" + currentUserId);
+            currentNickname = u.nickname || u.username || ("User_" + currentUserId);
         } else {
             currentNickname = "User_" + currentUserId;
         }
@@ -315,7 +315,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         currentNickname = "User_" + currentUserId;
     }
 
-    // Всегда рисуем нормальную шапку с профилем и кнопкой выхода
+    // Отрисовка ссылки на профиль и Logout в шапке
     m.innerHTML = '<a href="profile.html?id=' + currentUserId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + currentNickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
     
     document.getElementById('logoutBtn').addEventListener('click', function(e) {
@@ -341,7 +341,7 @@ function updateAuthorDisplay() {
         displayUser.textContent = "Anonymous";
         toggleBtn.textContent = "от своего имени";
     } else {
-        displayUser.textContent = currentNickname;
+        displayUser.textContent = currentNickname; // Теперь здесь подставляется никнейм аккаунта
         toggleBtn.textContent = "анонимно";
     }
 }
