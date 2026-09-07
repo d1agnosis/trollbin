@@ -213,7 +213,7 @@
             toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
         }
 
-        // Получаем текущего пользователя из localStorage (для шапки сайта)
+        // Получаем текущего пользователя из localStorage
         function getCurrentUser() {
             try {
                 const userStr = localStorage.getItem('currentUser') || localStorage.getItem('user');
@@ -262,9 +262,9 @@
             let profileId = urlParams.get('id');
             const currentUser = getCurrentUser();
 
-            // Если в ссылке нет ID, но пользователь залогинен — показываем его собственный профиль
+            // Если в ссылке нет ID, но пользователь залогинен — берем его ID
             if (!profileId && currentUser) {
-                profileId = currentUser.id || currentUser._id;
+                profileId = String(currentUser.id || currentUser._id);
             }
 
             const avatarContainer = document.getElementById('pAvatarContainer');
@@ -279,7 +279,7 @@
             try {
                 // Запрос к серверу за данными пользователя
                 const response = await fetch(`/api/users/${profileId}`);
-                if (!response.ok) throw new Error("Не удалось получить данные");
+                if (!response.ok) throw new Error(`Не удалось получить данные (Статус: ${response.status})`);
                 
                 const user = await response.json();
 
@@ -302,21 +302,24 @@
                     bannerElement.style.background = '#151515';
                 }
 
-                // Аватарка
+                // Аватарка (исправлен баг с присвоением переменной)
                 if (user.avatar && user.avatar.trim() !== '') {
                     avatarContainer.innerHTML = `<img class="profile-avatar" src="${user.avatar}" alt="Avatar">`;
                 } else {
                     const firstLetter = user.nickname ? user.nickname.charAt(0).toUpperCase() : '?';
-                    avatarContainer.innerHTML = `<div class="profile-avatar">${firstItemLetter = firstLetter}</div>`;
+                    avatarContainer.innerHTML = `<div class="profile-avatar">${firstLetter}</div>`;
                 }
 
-                // Кнопка настроек, если это ваш профиль
-                if (currentUser && (currentUser.id === profileId || currentUser._id === profileId)) {
-                    document.getElementById('editProfileBtn').style.display = 'block';
+                // Кнопка настроек показывается, только если это ваш профиль
+                if (currentUser) {
+                    const currentUid = String(currentUser.id || currentUser._id);
+                    if (currentUid === String(profileId)) {
+                        document.getElementById('editProfileBtn').style.display = 'block';
+                    }
                 }
 
             } catch (err) {
-                console.error(err);
+                console.error("Ошибка загрузки профиля:", err);
                 document.getElementById('pNickname').textContent = 'Пользователь не найден';
                 document.getElementById('pBio').textContent = 'Данный аккаунт не существует в базе данных.';
             }
@@ -337,7 +340,6 @@
 
         function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
 
-        // Заглушка для комментариев в профиле (можно перенести на бэкенд при необходимости)
         function getStorageKey() {
             const urlParams = new URLSearchParams(window.location.search);
             return 'profile_comments_' + (urlParams.get('id') || 'general');
@@ -353,7 +355,7 @@
             }
 
             listDiv.innerHTML = "";
-            comments.forEach(function(c, index) {
+            comments.forEach(function(c) {
                 const item = document.createElement('div');
                 item.style.cssText = "background: #0d0d0d; padding: 6px 8px; margin-bottom: 6px; border: 1px solid #222; border-radius: 3px; position: relative;";
                 
