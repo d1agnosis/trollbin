@@ -14,13 +14,24 @@ async function connectToDatabase() {
 }
 
 module.exports = async (req, res) => {
+    // Разрешаем только POST запросы
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
     try {
-        const nickname = req.body.nickname || req.body.username;
-        const password = req.body.password;
+        // Гарантированно получаем тело запроса, даже если Vercel передал его строкой
+        let body = req.body;
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            } catch (e) {
+                body = {};
+            }
+        }
+
+        const nickname = body && (body.nickname || body.username);
+        const password = body && body.password;
 
         if (!nickname || !password) {
             return res.status(400).json({ message: 'Заполните все поля!' });
@@ -29,11 +40,13 @@ module.exports = async (req, res) => {
         const db = await connectToDatabase();
         const usersCollection = db.collection('users');
 
+        // Проверяем, существует ли пользователь
         const existingUser = await usersCollection.findOne({ nickname });
         if (existingUser) {
             return res.status(400).json({ message: 'Пользователь уже существует' });
         }
 
+        // Сохраняем пользователя
         const result = await usersCollection.insertOne({ 
             nickname, 
             password, 
@@ -46,8 +59,7 @@ module.exports = async (req, res) => {
             userId: result.insertedId.toString() 
         });
     } catch (error) {
-        console.error('Ошибка бэкенда:', error);
-        // Возвращаем текст ошибки клиенту, чтобы увидеть её на экране
-        return res.status(400).json({ message: 'Ошибка сервера: ' + error.message });
+        console.error('Ошибка сервера:', error);
+        return res.status(500).json({ message: 'Ошибка сервера: ' + error.message });
     }
 };
