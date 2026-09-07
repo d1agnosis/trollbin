@@ -105,7 +105,6 @@
         }
     </style>
 </head>
-⠀
 <body>
 
 <div id="leftSidebar" class="sidebar">
@@ -412,25 +411,42 @@
             });
         }
 
-        // Авторизация в шапке
+        // Авторизация в шапке (Исправленная и надежная проверка)
         const m = document.getElementById('authMenu');
         if (m) {
             const currentUserId = localStorage.getItem('currentUserId');
+            let currentUserObj = null;
+
+            // Пробуем найти через загруженный список с бэкенда
             if (currentUserId) {
-                const u = users.find(x => (x.id === currentUserId || x._id === currentUserId));
-                if (u) {
-                    const uId = u.id || u._id;
-                    m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-                    
-                    document.getElementById('logoutBtn').addEventListener('click', function(e) {
-                        e.preventDefault();
-                        localStorage.removeItem('currentUserId');
-                        location.reload();
-                    });
-                    return;
-                }
+                currentUserObj = users.find(x => (x.id === currentUserId || x._id === currentUserId));
             }
-            m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+
+            // Если не нашли в списке, проверяем localStorage напрямую (если данные сохранились там)
+            if (!currentUserObj) {
+                try {
+                    const localUserStr = localStorage.getItem('currentUser');
+                    if (localUserStr) {
+                        currentUserObj = JSON.parse(localUserStr);
+                    }
+                } catch(e) {}
+            }
+
+            if (currentUserObj) {
+                const uId = currentUserObj.id || currentUserObj._id;
+                const uNick = currentUserObj.nickname;
+                
+                m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + uNick + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                
+                document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('currentUserId');
+                    localStorage.removeItem('currentUser');
+                    location.reload();
+                });
+            } else {
+                m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+            }
         }
     });
 </script>
