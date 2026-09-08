@@ -474,9 +474,9 @@
 </footer>
 
 <script>
-    // Инициализация Supabase (замените на ваши реальные ключи, если еще не сделали)
-    const SUPABASE_URL = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODg1MjkzMSwiZXhwIjoyMTA0NDI4OTMxfQ.Z1Fe8IQnKQfZNgOpGAKi_lAHcer03rYMz_MMtug4VIY';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+    // Инициализация Supabase (замените на ваши реальные ключи)
+    const SUPABASE_URL = 'ВАШ_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'ВАШ_SUPABASE_ANON_KEY';
     
     let supabaseClient = null;
     try {
@@ -500,44 +500,49 @@
     }
     function scrollToTopPage() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
+    // Универсальная функция получения текущего пользователя
+    function getCurrentUser() {
+        const currentUserId = localStorage.getItem('currentUserId');
+        if (!currentUserId) return null;
+
+        let users = [];
+        try { users = JSON.parse(localStorage.getItem('users') || '[]'); } catch(e){}
+        let user = users.find(u => u.id === currentUserId || u.nickname === currentUserId);
+
+        // Если в массиве users нет объекта, но ID есть — создаем базовый профиль из ID
+        if (!user) {
+            user = {
+                id: currentUserId,
+                nickname: currentUserId,
+                avatar: ''
+            };
+        }
+        return user;
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
-        // Рендерим меню авторизации безопасно
         const m = document.getElementById('authMenu');
         if (m) {
             try {
-                const currentUserId = localStorage.getItem('currentUserId');
-                let users = [];
-                try {
-                    users = JSON.parse(localStorage.getItem('users') || '[]');
-                } catch (err) {
-                    users = [];
-                }
-                
-                if (currentUserId && Array.isArray(users)) {
-                    const u = users.find(x => x.id === currentUserId);
-                    if (u) {
-                        m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + (u.nickname || 'Профиль') + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-                        const logoutBtn = document.getElementById('logoutBtn');
-                        if (logoutBtn) {
-                            logoutBtn.addEventListener('click', function(e) {
-                                e.preventDefault();
-                                localStorage.removeItem('currentUserId');
-                                location.reload();
-                            });
-                        }
-                    } else {
-                        m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+                const user = getCurrentUser();
+                if (user) {
+                    m.innerHTML = `<a href="profile.html?id=${user.id}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${user.nickname}</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>`;
+                    const logoutBtn = document.getElementById('logoutBtn');
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            localStorage.removeItem('currentUserId');
+                            location.reload();
+                        });
                     }
                 } else {
                     m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
                 }
             } catch (ex) {
-                console.error("Ошибка рендеринга authMenu:", ex);
                 m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a>';
             }
         }
 
-        // Загружаем сообщения
         fetchMessages();
         setupRealtimeSubscription();
 
@@ -617,7 +622,6 @@
         if (!container) return;
         
         const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
-
         container.innerHTML = '';
 
         if (!msgs || msgs.length === 0) {
@@ -625,69 +629,49 @@
             return;
         }
 
-        const currentUserId = localStorage.getItem('currentUserId');
+        const currentUser = getCurrentUser();
         let allUsers = [];
-        try {
-            allUsers = JSON.parse(localStorage.getItem('users') || '[]');
-        } catch(e) { allUsers = []; }
+        try { allUsers = JSON.parse(localStorage.getItem('users') || '[]'); } catch(e){}
 
         msgs.forEach(msg => {
             const div = document.createElement('div');
-            const isOutgoing = (msg.user_id === currentUserId);
+            const isOutgoing = currentUser && (msg.user_id === currentUser.id || msg.nickname === currentUser.nickname);
             div.className = `chat-message ${isOutgoing ? 'outgoing' : 'incoming'}`;
             div.id = `msg-${msg.id}`;
 
             let timeStr = '';
             if (msg.created_at) {
                 const dateObj = new Date(msg.created_at);
-                const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-                timeStr = dateObj.toLocaleString('ru-RU', options);
+                timeStr = dateObj.toLocaleString('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
             }
 
             const authorUser = allUsers.find(u => u.id === msg.user_id) || {};
             const nickname = authorUser.nickname || msg.nickname || 'Аноним';
             const avatar = authorUser.avatar !== undefined ? authorUser.avatar : msg.avatar;
 
-            let avatarHtml = '';
-            const firstLetter = nickname.charAt(0).toUpperCase();
-
-            if (avatar && avatar.trim() !== '') {
-                avatarHtml = `<img src="${escapeHtml(avatar)}" class="chat-avatar" alt="${escapeHtml(nickname)}">`;
-            } else {
-                avatarHtml = `<div class="chat-avatar">${firstLetter}</div>`;
-            }
+            let avatarHtml = avatar && avatar.trim() !== '' 
+                ? `<img src="${escapeHtml(avatar)}" class="chat-avatar" alt="${escapeHtml(nickname)}">`
+                : `<div class="chat-avatar">${nickname.charAt(0).toUpperCase()}</div>`;
 
             let quoteHtml = '';
             if (msg.reply_to_id) {
-                const repliedUserObj = allUsers.find(u => u.nickname && u.nickname.toLowerCase() === (msg.reply_to_user || '').toLowerCase());
-                const repliedUserId = repliedUserObj ? repliedUserObj.id : null;
-                
-                let authorQuoteHtml = `<span class="chat-quote-author">${escapeHtml(msg.reply_to_user || 'Пользователь')}</span>`;
-                if (repliedUserId) {
-                    authorQuoteHtml = `<a href="profile.html?id=${repliedUserId}" class="chat-quote-author">${escapeHtml(msg.reply_to_user)}</a>`;
-                }
-
                 quoteHtml = `
                     <div class="chat-quote">
                         <div onclick="scrollToMessage(${msg.reply_to_id})" style="cursor: pointer;">
-                            ${authorQuoteHtml}: ${escapeHtml(msg.reply_to_text || '')}
+                            <span class="chat-quote-author">${escapeHtml(msg.reply_to_user || 'Пользователь')}</span>: ${escapeHtml(msg.reply_to_text || '')}
                         </div>
                     </div>
                 `;
             }
 
-            let deleteBtnHtml = '';
-            if (isOutgoing) {
-                deleteBtnHtml = `<button class="chat-delete-btn" onclick="deleteMessage(${msg.id})">Удалить</button>`;
-            }
-
+            let deleteBtnHtml = isOutgoing ? `<button class="chat-delete-btn" onclick="deleteMessage(${msg.id})">Удалить</button>` : '';
             const formattedText = formatMessageText(msg.text || '', allUsers);
 
             div.innerHTML = `
                 ${avatarHtml}
                 <div class="chat-content">
                     <div class="chat-message-header">
-                        <a href="profile.html?id=${msg.user_id}" class="chat-message-author">${escapeHtml(nickname)}</a>
+                        <a href="profile.html?id=${msg.user_id || ''}" class="chat-message-author">${escapeHtml(nickname)}</a>
                         <span class="chat-message-time">${timeStr}</span>
                     </div>
                     ${quoteHtml}
@@ -707,7 +691,6 @@
             window._hasScrolledInitial = true;
             markAllAsRead();
         }
-
         updateFloatingButtonsState();
     }
 
@@ -717,15 +700,10 @@
         const mentionBtn = document.getElementById('floatMentionBtn');
         const scrollBottomBtn = document.getElementById('floatScrollBottomBtn');
         const mentionBadge = document.getElementById('mentionBadgeCount');
-        const unreadDownBadge = document.getElementById('unreadDownCount');
 
         if (!container || !floatBox) return;
 
-        const currentUserId = localStorage.getItem('currentUserId');
-        let users = [];
-        try { users = JSON.parse(localStorage.getItem('users') || '[]'); } catch(e){}
-        const currentUser = users.find(u => u.id === currentUserId);
-
+        const currentUser = getCurrentUser();
         if (!currentUser) {
             floatBox.style.display = 'none';
             return;
@@ -733,40 +711,26 @@
 
         const userNickname = currentUser.nickname.toLowerCase();
         let readMentions = [];
-        try { readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUserId) || '[]'); } catch(e){}
+        try { readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUser.id) || '[]'); } catch(e){}
 
         let unreadMentionsAbove = 0;
         let hasUnreadDown = false;
-
         const scrollTop = container.scrollTop;
         const scrollBottom = scrollTop + container.clientHeight;
         const isAtBottom = container.scrollHeight - scrollBottom < 60;
 
         messages.forEach(msg => {
             const msgEl = document.getElementById(`msg-${msg.id}`);
-            const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
+            const isMyMessage = (msg.user_id === currentUser.id || msg.nickname === currentUser.nickname);
             if (isMyMessage) return;
 
             const text = (msg.text || '').toLowerCase();
-            const isMentioned = text.includes('@' + userNickname) || text.includes(userNickname);
-            const isReplyToMe = (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-
-            if (isMentioned || isReplyToMe) {
-                if (!readMentions.includes(msg.id)) {
-                    if (msgEl) {
-                        const elTop = msgEl.offsetTop;
-                        if (elTop < scrollTop) {
-                            unreadMentionsAbove++;
-                        }
-                    }
+            if ((text.includes('@' + userNickname) || text.includes(userNickname) || (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname))) {
+                if (!readMentions.includes(msg.id) && msgEl && msgEl.offsetTop < scrollTop) {
+                    unreadMentionsAbove++;
                 }
             }
-
-            if (msgEl) {
-                if (msgEl.offsetTop > scrollBottom) {
-                    hasUnreadDown = true;
-                }
-            }
+            if (msgEl && msgEl.offsetTop > scrollBottom) hasUnreadDown = true;
         });
 
         if (isAtBottom) {
@@ -775,94 +739,49 @@
             hasUnreadDown = false;
         }
 
-        if (unreadMentionsAbove > 0) {
-            mentionBtn.style.display = 'flex';
-            mentionBadge.textContent = unreadMentionsAbove;
-        } else {
-            mentionBtn.style.display = 'none';
-        }
-
-        if (!isAtBottom && hasUnreadDown) {
-            scrollBottomBtn.style.display = 'flex';
-            if (unreadDownBadge) unreadDownBadge.style.display = 'none';
-        } else {
-            scrollBottomBtn.style.display = 'none';
-        }
-
-        if (unreadMentionsAbove === 0 && isAtBottom) {
-            floatBox.style.display = 'none';
-        } else {
-            floatBox.style.display = 'flex';
-        }
+        mentionBtn.style.display = unreadMentionsAbove > 0 ? 'flex' : 'none';
+        mentionBadge.textContent = unreadMentionsAbove;
+        scrollBottomBtn.style.display = (!isAtBottom && hasUnreadDown) ? 'flex' : 'none';
+        floatBox.style.display = (unreadMentionsAbove === 0 && isAtBottom) ? 'none' : 'flex';
     }
 
     function markAllAsRead() {
-        const currentUserId = localStorage.getItem('currentUserId');
-        if (!currentUserId) return;
-        let users = [];
-        try { users = JSON.parse(localStorage.getItem('users') || '[]'); } catch(e){}
-        const currentUser = users.find(u => u.id === currentUserId);
+        const currentUser = getCurrentUser();
         if (!currentUser) return;
 
         const userNickname = currentUser.nickname.toLowerCase();
         let readMentions = [];
-        try { readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUserId) || '[]'); } catch(e){}
+        try { readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUser.id) || '[]'); } catch(e){}
 
         messages.forEach(msg => {
-            const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
+            const isMyMessage = (msg.user_id === currentUser.id || msg.nickname === currentUser.nickname);
             if (isMyMessage) return;
-
             const text = (msg.text || '').toLowerCase();
-            const isMentioned = text.includes('@' + userNickname) || text.includes(userNickname);
-            const isReplyToMe = (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-
-            if ((isMentioned || isReplyToMe) && !readMentions.includes(msg.id)) {
+            if ((text.includes('@' + userNickname) || text.includes(userNickname) || (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname)) && !readMentions.includes(msg.id)) {
                 readMentions.push(msg.id);
             }
         });
-
-        localStorage.setItem('readMentions_' + currentUserId, JSON.stringify(readMentions));
+        localStorage.setItem('readMentions_' + currentUser.id, JSON.stringify(readMentions));
     }
 
     function scrollToNextMention() {
-        const currentUserId = localStorage.getItem('currentUserId');
-        if (!currentUserId) return;
-        let users = [];
-        try { users = JSON.parse(localStorage.getItem('users') || '[]'); } catch(e){}
-        const currentUser = users.find(u => u.id === currentUserId);
+        const currentUser = getCurrentUser();
         if (!currentUser) return;
-
         const userNickname = currentUser.nickname.toLowerCase();
         const container = document.getElementById('chatMessages');
-        const scrollTop = container.scrollTop;
-
+        
         let targetMsg = messages.find(msg => {
-            const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
+            const isMyMessage = (msg.user_id === currentUser.id || msg.nickname === currentUser.nickname);
             if (isMyMessage) return false;
             const text = (msg.text || '').toLowerCase();
-            const isMentioned = text.includes('@' + userNickname) || text.includes(userNickname);
-            const isReplyToMe = (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-
-            if (isMentioned || isReplyToMe) {
+            if (text.includes('@' + userNickname) || text.includes(userNickname) || (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname)) {
                 const msgEl = document.getElementById(`msg-${msg.id}`);
-                if (msgEl && msgEl.offsetTop < scrollTop) {
-                    return true;
-                }
+                if (msgEl && msgEl.offsetTop < container.scrollTop) return true;
             }
             return false;
         });
 
-        if (targetMsg) {
-            scrollToMessage(targetMsg.id);
-        } else {
-            let anyMention = messages.find(msg => {
-                const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
-                if (isMyMessage) return false;
-                const text = (msg.text || '').toLowerCase();
-                return text.includes('@' + userNickname) || text.includes(userNickname) || (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-            });
-            if (anyMention) scrollToMessage(anyMention.id);
-        }
+        if (targetMsg) scrollToMessage(targetMsg.id);
     }
 
     function scrollToBottom() {
@@ -878,22 +797,18 @@
         if (targetElement) {
             targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             targetElement.classList.add('highlight');
-            setTimeout(() => {
-                targetElement.classList.remove('highlight');
-            }, 1500);
+            setTimeout(() => targetElement.classList.remove('highlight'), 1500);
 
-            const currentUserId = localStorage.getItem('currentUserId');
-            if (currentUserId) {
+            const currentUser = getCurrentUser();
+            if (currentUser) {
                 let readMentions = [];
-                try { readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUserId) || '[]'); } catch(e){}
+                try { readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUser.id) || '[]'); } catch(e){}
                 if (!readMentions.includes(id)) {
                     readMentions.push(id);
-                    localStorage.setItem('readMentions_' + currentUserId, JSON.stringify(readMentions));
+                    localStorage.setItem('readMentions_' + currentUser.id, JSON.stringify(readMentions));
                 }
             }
             setTimeout(updateFloatingButtonsState, 500);
-        } else {
-            alert('Исходное сообщение не найдено (возможно, оно было удалено).');
         }
     }
 
@@ -912,15 +827,7 @@
 
     async function deleteMessage(id) {
         if (!supabaseClient) return;
-        const { error } = await supabaseClient
-            .from('chat_messages')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Ошибка удаления сообщения:', error);
-            alert('Не удалось удалить сообщение.');
-        }
+        await supabaseClient.from('chat_messages').delete().eq('id', id);
     }
 
     async function sendMessage() {
@@ -929,15 +836,9 @@
         let text = input.value.trim();
         if (!text) return;
 
-        if (text.length > 300) {
-            text = text.substring(0, 300);
-        }
+        if (text.length > 300) text = text.substring(0, 300);
 
-        const currentUserId = localStorage.getItem('currentUserId');
-        let users = [];
-        try { users = JSON.parse(localStorage.getItem('users') || '[]'); } catch(e){}
-        const currentUser = users.find(u => u.id === currentUserId);
-
+        const currentUser = getCurrentUser();
         if (!currentUser) {
             alert('Чтобы писать в чат, необходимо войти в аккаунт!');
             window.location.href = 'login.html';
@@ -959,9 +860,7 @@
             reply_to_user: currentReplyTo ? currentReplyTo.user : null
         };
 
-        const { error } = await supabaseClient
-            .from('chat_messages')
-            .insert([newMessage]);
+        const { error } = await supabaseClient.from('chat_messages').insert([newMessage]);
 
         if (error) {
             console.error('Ошибка отправки сообщения:', error);
