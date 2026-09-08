@@ -6,7 +6,6 @@
     <title>TrollBin - База данных троллей</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Делаем body гибким контейнером на всю высоту экрана */
         html, body {
             height: 100%;
             margin: 0;
@@ -20,10 +19,9 @@
             min-height: 100vh;
         }
         main {
-            flex: 1; /* Растягивает блок контента, заставляя подвал уходить вниз */
+            flex: 1;
         }
 
-        /* Стили для выдвигающегося слева меню */
         .sidebar {
             position: fixed;
             top: 0;
@@ -86,7 +84,6 @@
             color: #ff3333;
         }
 
-        /* Стили для кнопки НАВЕРХ */
         .top-btn {
             background: #0d0d0d;
             color: #ff3333;
@@ -186,7 +183,6 @@
 </div>
 
 <header style="text-align: center; margin-bottom: 30px; position: relative; margin-top: 60px;">
-    <!-- Вставленный ASCII-арт троллфейса -->
     <pre style="text-align: center; font-family: 'Courier New', monospace; font-size: 6px; line-height: 6px; color: #ff3333; text-shadow: 1px 1px 3px rgba(255, 51, 51, 0.5); overflow-x: auto; padding: 10px;">
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⣤⣤⣤⣤⣴⡶⠶⠶⠶⠶⠶⠶⠶⠶⠤⠤⢤⣤⣤⣤⣤⣤⣄⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⠟⠋⠀⠀⠀⠀⢀⣀⠤⠖⠚⢉⣉⣉⣉⣉⣀⠀⠀⠀⠀⠀⠀⠈⠉⠩⠛⠛⠛⠻⠷⣦⣄⡀⠀⠀⠀⠀⠀⠀
@@ -200,7 +196,7 @@
 ⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⣾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
 ⠀⠙⢿⣌⡑⠲⠄⠀⠀⠙⢿⣿⣶⣦⣼⣿⣄⠀⠈⠉⠛⠻⣿⣶⣯⣤⣀⣀⡀⠀⠘⠿⠾⠟⠁⠀⠀⢀⣀⣤⣾⣿⢿⣿⣇⠀⠀⣼⡟⠀
 ⠀⠀⠀⠹⣿⣇⠀⠀⠀⠀⠈⢻⣦⠈⠙⣿⣿⣷⣶⣤⣄⣠⣿⠁⠀⠈⠉⠙⢻⡟⠛⠻⠿⣿⠿⠛⠛⢻⣿⠁⢈⣿⣨⣿⣿⠀⢰⡿⠀⠀
-⠀⠀⠀⠀⠈⢻⣇⠀⠀⠀⠀⠀⠙⢷⣶⡿⠀⠈⠙⠛⠿⣿⣿⣶⣶⣦⣤⣤⣼⣧⣤⣤⣤⣿⣦⣤⣤⣶⣿⣷⣾⣿⣿⣿⡟⠀⢸⡇⠀⠀
+⠀⠀⠀⠀⠈⢻⣇⠀⠀⠀⠀⠀⠙⢷⣶⡿⠀⠈⠙⠛⠿⣿⣿⣶⣶⣦⣤⣤⣼⣧⣤⣤⣤⣿⣤⣤⣶⣿⣷⣾⣿⣿⣿⡟⠀⢸⡇⠀⠀
 ⠀⠀⠀⠀⠀⠈⢿⣦⠀⠀⠀⠀⠀⠀⠙⢷*_⡀⠀⠀⢀⣿⠁⠉⠙⠛⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⢸⣷⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠙⢷⣄⠀⢀⡀⠀⣀⡀⠈⠻⢷⣦⣾⡃⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⢹⡟⠉⠉⣿⠏⢡⣿⠃⣾⣷⡿⠁⠀⠘⣿⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢷⣤⣉⠒⠤⣉⠓⠦⣀⡈⠉⠛⠿⠶⢶⣤⣤⣾⣧⣀⣀⣀⣿⣄⣠⣼⣿⣤⣿⠷⠾⠟⠋⠀⠀⠀⠀⣿⠀⠀
@@ -315,7 +311,23 @@
     <p style="margin: 20px 0 0 0; color: #555; font-size: 10px; text-align: center; width: 100%">&copy; 2026 TrollBin. Все права защищены (или нарушены).</p>
 </footer>
 
+<!-- Подключаем Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+    // Вставьте сюда ваши реальные ключи Supabase
+    const SUPABASE_URL = 'ВАШ_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'ВАШ_SUPABASE_ANON_KEY';
+    
+    let supabaseClient = null;
+    try {
+        if (window.supabase && SUPABASE_URL !== 'ВАШ_SUPABASE_URL') {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+    } catch (e) {
+        console.error("Ошибка инициализации Supabase:", e);
+    }
+
     function scrollToTop() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -329,11 +341,7 @@
         const sidebar = document.getElementById('leftSidebar');
         const toggleBtn = document.querySelector('.sidebar-toggle');
         sidebar.classList.toggle('open');
-        if (sidebar.classList.contains('open')) {
-            toggleBtn.innerHTML = '&#10094;';
-        } else {
-            toggleBtn.innerHTML = '&#10095;';
-        }
+        toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
     }
 
     document.addEventListener("DOMContentLoaded", async function() {
@@ -343,14 +351,21 @@
 
         let users = [];
 
-        // Загрузка данных с бэкенда (MongoDB) вместо localStorage
-        try {
-            const response = await fetch('/api/users');
-            if (response.ok) {
-                users = await response.json();
+        // Загрузка пользователей из базы Supabase
+        if (supabaseClient) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*');
+                
+                if (error) {
+                    console.error('Ошибка загрузки пользователей:', error);
+                } else {
+                    users = data || [];
+                }
+            } catch (err) {
+                console.error('Ошибка запроса:', err);
             }
-        } catch (error) {
-            console.error('Ошибка загрузки пользователей:', error);
         }
 
         function renderCards(list) {
@@ -368,7 +383,7 @@
 
             list.forEach(user => {
                 const card = document.createElement('a');
-                const userId = user.id || user._id;
+                const userId = user.id;
                 card.href = `profile.html?id=${userId}`;
                 card.className = 'archive-user-card';
 
@@ -380,11 +395,16 @@
                     avatarHTML = `<div class="archive-card-avatar archive-card-letter">${firstLetter}</div>`;
                 }
 
+                let joinedStr = 'N/A';
+                if (user.created_at) {
+                    joinedStr = new Date(user.created_at).toLocaleDateString('ru-RU');
+                }
+
                 card.innerHTML = `
                     ${avatarHTML}
                     <div class="archive-card-info">
-                        <h4>${user.nickname}</h4>
-                        <p>ID: ${userId} | Joined: ${user.joined || 'N/A'}</p>
+                        <h4>${user.nickname || 'Аноним'}</h4>
+                        <p>ID: ${userId} | Joined: ${joinedStr}</p>
                     </div>
                 `;
                 container.appendChild(card);
@@ -396,54 +416,49 @@
         if (searchInput) {
             searchInput.addEventListener('input', function() {
                 const query = searchInput.value.trim().toLowerCase();
-                const filtered = users.filter(u => u.nickname.toLowerCase().includes(query));
+                const filtered = users.filter(u => u.nickname && u.nickname.toLowerCase().includes(query));
                 renderCards(filtered);
             });
 
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     const query = searchInput.value.trim().toLowerCase();
-                    const foundUser = users.find(u => u.nickname.toLowerCase() === query);
+                    const foundUser = users.find(u => u.nickname && u.nickname.toLowerCase() === query);
                     if (foundUser) {
-                        window.location.href = `profile.html?id=${foundUser.id || foundUser._id}`;
+                        window.location.href = `profile.html?id=${foundUser.id}`;
                     }
                 }
             });
         }
 
-        // Авторизация в шапке (Исправленная и надежная проверка)
+        // Авторизация в правом верхнем углу
         const m = document.getElementById('authMenu');
         if (m) {
             const currentUserId = localStorage.getItem('currentUserId');
             let currentUserObj = null;
 
-            // Пробуем найти через загруженный список с бэкенда
-            if (currentUserId) {
-                currentUserObj = users.find(x => (x.id === currentUserId || x._id === currentUserId));
+            if (currentUserId && users.length > 0) {
+                currentUserObj = users.find(x => x.id === currentUserId || x.nickname === currentUserId);
             }
 
-            // Если не нашли в списке, проверяем localStorage напрямую (если данные сохранились там)
-            if (!currentUserObj) {
-                try {
-                    const localUserStr = localStorage.getItem('currentUser');
-                    if (localUserStr) {
-                        currentUserObj = JSON.parse(localUserStr);
-                    }
-                } catch(e) {}
+            if (!currentUserObj && currentUserId) {
+                currentUserObj = { id: currentUserId, nickname: currentUserId };
             }
 
             if (currentUserObj) {
-                const uId = currentUserObj.id || currentUserObj._id;
-                const uNick = currentUserObj.nickname;
+                const uId = currentUserObj.id;
+                const uNick = currentUserObj.nickname || currentUserId;
                 
-                m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + uNick + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                m.innerHTML = `<a href="profile.html?id=${uId}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${uNick}</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>`;
                 
-                document.getElementById('logoutBtn').addEventListener('click', function(e) {
-                    e.preventDefault();
-                    localStorage.removeItem('currentUserId');
-                    localStorage.removeItem('currentUser');
-                    location.reload();
-                });
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        localStorage.removeItem('currentUserId');
+                        location.reload();
+                    });
+                }
             } else {
                 m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
             }
