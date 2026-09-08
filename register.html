@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrollBin - База данных троллей</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background-color: #0d0d0d;
@@ -199,6 +201,11 @@
 </div>
 
 <script>
+    // Инициализация Supabase
+    const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     function openModal() {
         document.getElementById('infoModal').style.display = 'flex';
     }
@@ -220,17 +227,23 @@
     }
 
     // Автоматическая проверка авторизации для шапки
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", async function() {
         const m = document.getElementById('authMenu');
         const currentUserId = localStorage.getItem('currentUserId');
         
         if (currentUserId && m) {
             try {
-                const localUserStr = localStorage.getItem('currentUser');
-                if (localUserStr) {
-                    const u = JSON.parse(localUserStr);
-                    const uId = u.id || u._id;
-                    m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                const { data: u, error } = await _supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUserId)
+                    .single();
+
+                if (u && !error) {
+                    let rawNick = u.nickname || u.username || u.name;
+                    let displayNick = rawNick ? rawNick.replace(/^user_user_/i, 'user_') : "user_" + u.id;
+
+                    m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + displayNick + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
                     
                     document.getElementById('logoutBtn').addEventListener('click', function(e) {
                         e.preventDefault();
@@ -264,50 +277,45 @@
         }
 
         try {
-            // Пытаемся отправить на бэкенд, если он вдруг есть
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nickname: username, password: password })
-            });
+            // Проверяем, не занято ли имя пользователя в Supabase
+            const { data: existingUsers, error: checkError } = await _supabase
+                .from('users')
+                .select('id, nickname')
+                .ilike('nickname', username);
 
-            if (response.ok) {
-                const data = await response.json();
-                const userId = data.userId || data.id || data._id;
-                localStorage.setItem('currentUserId', userId);
-                alert('Регистрация успешна!');
-                window.location.href = 'profile.html?id=' + userId;
+            if (existingUsers && existingUsers.length > 0) {
+                alert('Пользователь с таким именем уже существует!');
                 return;
             }
+
+            // Создаем нового пользователя в базе данных Supabase
+            const newUserId = 'user_' + Date.now();
+            const newUser = {
+                id: newUserId,
+                nickname: username,
+                password: password,
+                joined: new Date().toISOString()
+            };
+
+            const { error: insertError } = await _supabase
+                .from('users')
+                .insert([newUser]);
+
+            if (insertError) {
+                throw insertError;
+            }
+
+            // Сохраняем сессию локально
+            localStorage.setItem('currentUserId', newUserId);
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+            alert('Регистрация успешна!');
+            window.location.href = 'profile.html?id=' + newUserId;
+
         } catch (err) {
-            console.log('Сервер недоступен, регистрируем локально...');
+            console.error('Ошибка регистрации:', err);
+            alert('Ошибка регистрации через базу данных. Попробуйте позже.');
         }
-
-        // Резервный вариант (работает без сервера через localStorage)
-        let users = JSON.parse(localStorage.getItem('users') || '[]');
-        
-        // Проверяем, нет ли уже такого пользователя
-        const existing = users.find(u => u.nickname.toLowerCase() === username.toLowerCase());
-        if (existing) {
-            alert('Пользователь с таким именем уже существует!');
-            return;
-        }
-
-        // Создаем нового пользователя с уникальным ID
-        const newUserId = 'user_' + Date.now();
-        const newUser = {
-            id: newUserId,
-            nickname: username,
-            password: password
-        };
-
-        users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
-        localStorage.setItem('currentUserId', newUserId);
-        localStorage.setItem('currentUser', JSON.stringify(newUser));
-
-        alert('Регистрация успешна!');
-        window.location.href = 'profile.html?id=' + newUserId;
     }
 </script>
 </body>

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrollBin - Hunting</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background-color: #0d0d0d;
@@ -234,153 +236,186 @@
 </div>
 
 <script>
-function openModal() { document.getElementById('infoModal').style.display = 'flex'; }
-function closeModal() { document.getElementById('infoModal').style.display = 'none'; }
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('infoModal');
-    if (event.target === modal) modal.style.display = 'none';
-});
+    // Инициализация Supabase
+    const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function toggleSidebar() {
-    const sidebar = document.getElementById('leftSidebar');
-    const toggleBtn = document.querySelector('.sidebar-toggle');
-    sidebar.classList.toggle('open');
-    toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
-}
-
-// Функция удаления пасты (дополнительно проверяет права перед удалением)
-function deleteHunt(event, huntId) {
-    event.stopPropagation();
-    
-    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
-    const huntToDelete = hunts.find(h => h.id === huntId);
-    const currentUserId = localStorage.getItem('currentUserId');
-
-    // Защита: если паста чужая (не совпадает ID автора), прерываем удаление
-    if (!huntToDelete || huntToDelete.authorId !== currentUserId) {
-        alert('У вас нет прав на удаление этой пасты!');
-        return;
-    }
-
-    if (!confirm('Вы уверены, что хотите удалить эту пасту?')) return;
-
-    hunts = hunts.filter(h => h.id !== huntId);
-    localStorage.setItem('hunts', JSON.stringify(hunts));
-    
-    loadHunts();
-}
-
-// Загрузка паст из localStorage
-function loadHunts() {
-    const grid = document.getElementById('huntGrid');
-    const counterElement = document.getElementById('hunt-counter');
-    const currentUserId = localStorage.getItem('currentUserId');
-    
-    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
-
-    grid.innerHTML = '';
-
-    if (hunts.length === 0) {
-        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #666; font-size: 13px; font-family: monospace; padding: 40px 0;">Здесь пока нет паст. Создайте первую через раздел "Add card"!</div>';
-    }
-
-    hunts.forEach(hunt => {
-        const card = document.createElement('div');
-        card.className = 'hunt-card';
-        card.setAttribute('data-title', hunt.title.toLowerCase());
-        card.onclick = () => { window.location.href = 'viewhunt.html?id=' + hunt.id; };
-
-        let deleteBtnHtml = '';
-        
-        // ЖЕСТКОЕ УСЛОВИЕ: Кнопка удаления показывается ТОЛЬКО если текущий юзер — реальный автор пасты
-        const isAuthorUser = currentUserId && currentUserId === hunt.authorId;
-
-        if (isAuthorUser) {
-            deleteBtnHtml = `<button class="delete-btn" onclick="deleteHunt(event, '${hunt.id}')">Удалить</button>`;
-        }
-
-        // Формируем ссылку на профиль автора, если сохранен его authorId
-        let authorHtml = '';
-        if (hunt.authorId) {
-            authorHtml = `<a href="profile.html?id=${hunt.authorId}" class="hunt-author" onclick="event.stopPropagation()">by ${escapeHtml(hunt.author || 'Anonymous')}</a>`;
-        } else {
-            authorHtml = `<span class="hunt-author">by ${escapeHtml(hunt.author || 'Anonymous')}</span>`;
-        }
-
-        card.innerHTML = `
-            <div>
-                <div class="hunt-header">
-                    <h3 class="hunt-title">${escapeHtml(hunt.title)}</h3>
-                    <span class="hunt-date">${hunt.date}</span>
-                </div>
-            </div>
-            <div>
-                ${deleteBtnHtml}
-                <div class="hunt-footer">
-                    ${authorHtml}
-                    <div class="hunt-stats">
-                        <span>👁 ${hunt.views || 0}</span>
-                        <span>💬 ${hunt.commentsCount || 0}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        grid.appendChild(card);
+    function openModal() { document.getElementById('infoModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('infoModal').style.display = 'none'; }
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('infoModal');
+        if (event.target === modal) modal.style.display = 'none';
     });
 
-    if (counterElement) {
-        counterElement.textContent = hunts.length;
+    function toggleSidebar() {
+        const sidebar = document.getElementById('leftSidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        sidebar.classList.toggle('open');
+        toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
     }
-}
 
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
+    // Функция удаления пасты из Supabase
+    async function deleteHunt(event, huntId) {
+        event.stopPropagation();
+        
+        const currentUserId = localStorage.getItem('currentUserId');
+        if (!currentUserId) {
+            alert('Необходимо авторизоваться!');
+            return;
+        }
 
-document.addEventListener("DOMContentLoaded", function() {
-    const m = document.getElementById('authMenu');
-    const id = localStorage.getItem('currentUserId');
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    if (id) {
-        const u = users.find(x => x.id === id);
-        if (u) {
-            m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-            document.getElementById('logoutBtn').addEventListener('click', function(e) {
-                e.preventDefault();
-                localStorage.removeItem('currentUserId');
-                location.reload();
+        // Получаем пасту из базы для проверки автора
+        const { data: huntToDelete, error: fetchError } = await _supabase
+            .from('hunts')
+            .select('*')
+            .eq('id', huntId)
+            .single();
+
+        if (fetchError || !huntToDelete || huntToDelete.authorId !== currentUserId) {
+            alert('У вас нет прав на удаление этой пасты!');
+            return;
+        }
+
+        if (!confirm('Вы уверены, что хотите удалить эту пасту?')) return;
+
+        const { error: deleteError } = await _supabase
+            .from('hunts')
+            .delete()
+            .eq('id', huntId);
+
+        if (deleteError) {
+            alert('Ошибка при удалении пасты');
+            console.error(deleteError);
+            return;
+        }
+        
+        loadHunts();
+    }
+
+    // Загрузка паст из Supabase
+    async function loadHunts() {
+        const grid = document.getElementById('huntGrid');
+        const counterElement = document.getElementById('hunt-counter');
+        const currentUserId = localStorage.getItem('currentUserId');
+        
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #888; font-size: 13px; font-family: monospace; padding: 40px 0;">Загрузка паст...</div>';
+
+        const { data: hunts, error } = await _supabase
+            .from('hunts')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        grid.innerHTML = '';
+
+        if (error || !hunts || hunts.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #666; font-size: 13px; font-family: monospace; padding: 40px 0;">Здесь пока нет паст. Создайте первую через раздел "Add card"!</div>';
+            if (counterElement) counterElement.textContent = '0';
+            return;
+        }
+
+        hunts.forEach(hunt => {
+            const card = document.createElement('div');
+            card.className = 'hunt-card';
+            card.setAttribute('data-title', (hunt.title || '').toLowerCase());
+            card.onclick = () => { window.location.href = 'viewhunt.html?id=' + hunt.id; };
+
+            let deleteBtnHtml = '';
+            const isAuthorUser = currentUserId && currentUserId === hunt.authorId;
+
+            if (isAuthorUser) {
+                deleteBtnHtml = `<button class="delete-btn" onclick="deleteHunt(event, '${hunt.id}')">Удалить</button>`;
+            }
+
+            let authorHtml = '';
+            if (hunt.authorId) {
+                authorHtml = `<a href="profile.html?id=${hunt.authorId}" class="hunt-author" onclick="event.stopPropagation()">by ${escapeHtml(hunt.author || 'Anonymous')}</a>`;
+            } else {
+                authorHtml = `<span class="hunt-author">by ${escapeHtml(hunt.author || 'Anonymous')}</span>`;
+            }
+
+            card.innerHTML = `
+                <div>
+                    <div class="hunt-header">
+                        <h3 class="hunt-title">${escapeHtml(hunt.title)}</h3>
+                        <span class="hunt-date">${hunt.date || ''}</span>
+                    </div>
+                </div>
+                <div>
+                    ${deleteBtnHtml}
+                    <div class="hunt-footer">
+                        ${authorHtml}
+                        <div class="hunt-stats">
+                            <span>👁 ${hunt.views || 0}</span>
+                            <span>💬 ${hunt.commentsCount || 0}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        if (counterElement) {
+            counterElement.textContent = hunts.length;
+        }
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    document.addEventListener("DOMContentLoaded", async function() {
+        const m = document.getElementById('authMenu');
+        const id = localStorage.getItem('currentUserId');
+        
+        if (id) {
+            // Проверяем пользователя через Supabase вместо локального хранилища
+            const { data: u, error } = await _supabase
+                .from('users')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (u && !error) {
+                m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('currentUserId');
+                    localStorage.removeItem('currentUser');
+                    location.reload();
+                });
+            } else {
+                m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+            }
+        } else {
+            m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+        }
+
+        loadHunts();
+
+        const searchInput = document.getElementById('huntSearchInput');
+        const counterElement = document.getElementById('hunt-counter');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                const searchText = e.target.value.toLowerCase().trim();
+                const cards = document.querySelectorAll('.hunt-card');
+                let visibleCount = 0;
+
+                cards.forEach(card => {
+                    const dataTitle = card.getAttribute('data-title') || '';
+                    if (dataTitle.includes(searchText)) {
+                        card.style.display = "";
+                        visibleCount++;
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+                if (counterElement) counterElement.textContent = visibleCount;
             });
         }
-    } else {
-        m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
-    }
-
-    loadHunts();
-
-    const searchInput = document.getElementById('huntSearchInput');
-    const counterElement = document.getElementById('hunt-counter');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            const searchText = e.target.value.toLowerCase().trim();
-            const cards = document.querySelectorAll('.hunt-card');
-            let visibleCount = 0;
-
-            cards.forEach(card => {
-                const dataTitle = card.getAttribute('data-title') || '';
-                if (dataTitle.includes(searchText)) {
-                    card.style.display = "";
-                    visibleCount++;
-                } else {
-                    card.style.display = "none";
-                }
-            });
-            if (counterElement) counterElement.textContent = visibleCount;
-        });
-    }
-});
+    });
 </script>
 </body>
 </html>

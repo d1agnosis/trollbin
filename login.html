@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrollBin - Вход</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background-color: #0d0d0d;
@@ -203,6 +205,11 @@
 </div>
 
 <script>
+    // Инициализация Supabase с вашими ключами
+    const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     function openModal() {
         document.getElementById('infoModal').style.display = 'flex';
     }
@@ -247,7 +254,7 @@
         }
     });
 
-    // Функция входа с поддержкой бэкенда и localStorage
+    // Функция входа через Supabase
     async function loginUser() {
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
@@ -258,39 +265,29 @@
         }
 
         try {
-            // Пытаемся авторизоваться через сервер (если он есть)
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nickname: username, password: password })
-            });
+            const { data, error } = await _supabase
+                .from('users')
+                .select('*')
+                .eq('nickname', username)
+                .eq('password', password)
+                .single();
 
-            if (response.ok) {
-                const data = await response.json();
-                const userId = data.id || data._id;
-                
-                localStorage.setItem('currentUserId', userId);
-                localStorage.setItem('currentUser', JSON.stringify(data));
-                window.location.href = 'profile.html?id=' + userId;
+            if (error || !data) {
+                alert('Неверное имя пользователя или пароль!');
                 return;
             }
-        } catch (error) {
-            console.log('Сервер недоступен, проверяем локальное хранилище...');
+
+            const userId = data.id;
+            
+            localStorage.setItem('currentUserId', userId);
+            localStorage.setItem('currentUser', JSON.stringify(data));
+            
+            window.location.href = 'profile.html?id=' + userId;
+
+        } catch (err) {
+            console.error('Ошибка входа:', err);
+            alert('Произошла ошибка при подключении к базе данных.');
         }
-
-        // Резервный вариант: проверка через localStorage
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const user = users.find(u => u.nickname.toLowerCase() === username.toLowerCase() && u.password === password);
-
-        if (!user) {
-            alert('Неверное имя пользователя или пароль!');
-            return;
-        }
-
-        const userId = user.id || user._id;
-        localStorage.setItem('currentUserId', userId);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        window.location.href = 'profile.html?id=' + userId;
     }
 </script>
 </body>

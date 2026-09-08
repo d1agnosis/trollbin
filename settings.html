@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Настройки профиля - TrollBin</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #0d0d0d; color: #e0e0e0; font-family: Arial, sans-serif; margin: 0; padding-top: 80px; }
         .settings-wrapper { max-width: 600px; margin: 30px auto; background: #141414; border: 1px solid #222; border-radius: 4px; padding: 25px; }
@@ -111,26 +113,51 @@
     </div>
 
     <script>
+        // Инициализация Supabase
+        const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         let newAvatarBase64 = '';
         let newBannerBase64 = '';
         let currentUserId = null;
 
-        document.addEventListener("DOMContentLoaded", function() {
-            currentUserId = localStorage.getItem('currentUserId') || (JSON.parse(localStorage.getItem('currentUser') || '{}')).id;
+        document.addEventListener("DOMContentLoaded", async function() {
+            currentUserId = localStorage.getItem('currentUserId');
             if (!currentUserId) {
                 window.location.href = 'login.html';
                 return;
             }
 
-            let users = JSON.parse(localStorage.getItem('users') || '[]');
-            let user = users.find(u => String(u.id) === String(currentUserId));
+            try {
+                // Загружаем данные пользователя из Supabase
+                const { data: user, error } = await _supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUserId)
+                    .single();
 
-            if (user) {
-                document.getElementById('nicknameInput').value = user.nickname || '';
-                document.getElementById('nicknameColorInput').value = user.nicknameColor || '#61b5ff';
+                if (error || !user) {
+                    alert('Пользователь не найден.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                document.getElementById('nicknameInput').value = user.nickname || user.username || '';
+                document.getElementById('nicknameColorInput').value = user.nicknameColor || user.nickname_color || '#61b5ff';
                 document.getElementById('bioInput').value = user.bio || '';
                 newAvatarBase64 = user.avatar || '';
                 newBannerBase64 = user.banner || '';
+
+                if (newAvatarBase64) {
+                    document.getElementById('avatarFileName').textContent = 'Аватар загружен';
+                }
+                if (newBannerBase64) {
+                    document.getElementById('bannerFileName').textContent = 'Баннер загружен';
+                }
+
+            } catch (err) {
+                console.error('Ошибка загрузки данных профиля:', err);
             }
 
             // Загрузка аватарки
@@ -168,7 +195,6 @@
                 e.preventDefault();
                 
                 const updatedData = {
-                    id: currentUserId,
                     nickname: document.getElementById('nicknameInput').value.trim(),
                     nicknameColor: document.getElementById('nicknameColorInput').value,
                     avatar: newAvatarBase64,
@@ -177,62 +203,55 @@
                 };
 
                 try {
-                    // Отправка данных на бэкенд Vercel
-                    const response = await fetch('/api/users', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(updatedData)
-                    });
+                    // Обновляем данные в таблице users в Supabase
+                    const { error } = await _supabase
+                        .from('users')
+                        .update(updatedData)
+                        .eq('id', currentUserId);
 
-                    if (!response.ok) {
-                        console.warn("Сервер недоступен или ответил с ошибкой, сохраняем локально");
-                    }
-
-                    // Дублируем в localStorage для мгновенного отображения в интерфейсе
-                    let usersList = JSON.parse(localStorage.getItem('users') || '[]');
-                    let currentUser = usersList.find(u => String(u.id) === String(currentUserId));
-                    
-                    if (currentUser) {
-                        Object.assign(currentUser, updatedData);
-                        localStorage.setItem('users', JSON.stringify(usersList));
-                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    if (error) {
+                        throw error;
                     }
                     
                     alert('Изменения успешно сохранены!');
                     window.location.href = 'profile.html?id=' + currentUserId;
                 } catch (err) {
-                    console.error(err);
-                    alert('Ошибка при сохранении изменений.');
+                    console.error('Ошибка сохранения:', err);
+                    alert('Ошибка при сохранении изменений в базе данных.');
                 }
             });
         });
 
-        function resetAvatar() {
+        async function resetAvatar() {
             newAvatarBase64 = '';
             document.getElementById('avatarFile').value = '';
             document.getElementById('avatarFileName').textContent = 'Файл не выбран';
             
-            let usersList = JSON.parse(localStorage.getItem('users') || '[]');
-            let currentUser = usersList.find(u => String(u.id) === String(currentUserId));
-            if (currentUser) {
-                currentUser.avatar = '';
-                localStorage.setItem('users', JSON.stringify(usersList));
+            try {
+                await _supabase
+                    .from('users')
+                    .update({ avatar: '' })
+                    .eq('id', currentUserId);
+                alert('Аватарка сброшена!');
+            } catch(e) {
+                console.error(e);
             }
-            alert('Аватарка сброшена!');
         }
 
-        function resetBanner() {
+        async function resetBanner() {
             newBannerBase64 = '';
             document.getElementById('bannerFile').value = '';
             document.getElementById('bannerFileName').textContent = 'Файл не выбран';
             
-            let usersList = JSON.parse(localStorage.getItem('users') || '[]');
-            let currentUser = usersList.find(u => String(u.id) === String(currentUserId));
-            if (currentUser) {
-                currentUser.banner = '';
-                localStorage.setItem('users', JSON.stringify(usersList));
+            try {
+                await _supabase
+                    .from('users')
+                    .update({ banner: '' })
+                    .eq('id', currentUserId);
+                alert('Баннер сброшен!');
+            } catch(e) {
+                console.error(e);
             }
-            alert('Баннер сброшен!');
         }
     </script>
 </body>

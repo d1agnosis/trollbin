@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrollBin - Добавить пасту</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background-color: #0d0d0d;
@@ -218,26 +220,26 @@
     <!-- ASCII-арт -->
     <div class="ascii-art">
             ⢀⣤⣤⣤⣤⣤⣴⡶⠶⠶⠶⠶⠶⠶⠶⠶⠤⠤⢤⣤⣤⣤⣤⣤⣄⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⠟⠋⠀⠀⠀⠀⢀⣀⠤⠖⠚⢉⣉⣉⣉⣉⣀⠀⠀⠀⠀⠀⠀⠈⠉⠩⠛⠛⠛⠻⠷⣦⣄⡀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣠⡿⠋⠀⠀⠀⣀⠤⠒⣉⠤⢒⣊⡉⠠⠤⠤⢤⡄⠈⠉⠉⠀⠂⠀⠀⠐⠂⠀⠉⠉⠉⠉⠂⠀⠙⠻⣶⣄⠀⠀⠀⠀
-⠀⠀⠀⠀⠀ ⣰⡿⠁⠀⠀logo⠊⢀⠔⣫⠔⠊⠁⠀⠀⠀⠀⠀⠀⠙⡄⠀⠀⠀⠀⠀⠘⣩⠋⠀⠀⠀⠉⠳⣄⠀⠀⠀⠈⢻⡇⠀⠀⠀
-⠀⠀⠀⠀⠀⣰⡿⠁⠀⠀⠀⠀⠀⠁⠜⠁⣀⣤⣶⣶⣶⣤⣤⣀⠀⠃⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠈⠈⠆⠀⠀⠀⠸⣧⡀⠀⠀
-⠀⠀⠀⣠⣾⣿⣥⠤⢄⡀⠀⢠⣤⠔⢠⣾⣿⣿⣿⣿⣿⣯⣄⡈⠙⢿⣦⠀⠀⠀⠀⡀⢀⣤⣶⣿⣿⣿⣿⣿⣦⠀⣀⣀⣀⣀⡙⢿⣦⡀
-⠀⣠⡾⣻⠋⢀⣠⣴⠶⠾⢶⣤⣄⡚⠉⠉⠉⠁⣠⣼⠏⠉⠙⠛⠷⡾⠛⠀⠀⠀⠘⠛⢿⡟⠛⠋⠉⠉⠉⠁⠀⠀⠀⠀⠀⠦⣝⠦⡙⣿
-⢰⡟⠁⡇⢠⣾⠋⠀⠀⣼⣄⠉⠙⠛⠷⠶⠶⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣇⠀⠀⠀⠠⣦⣄⣴⡾⢛⡛⠻⠷⠘⡄⢸⣿
-⢸⡇⠀⡇⢸⣇⢀⣤⣴⣿⠻⠷⣦⣄⣀⠀⠀⠀⢀⡀⠀⣀⠰⣤⡶⠶⠆⠀⠀⠀⠀⠀⠈⠛⢿⣦⣄⠀⠈⠉⠉⠁⢸⣇⠀⠀⣠⠃⢸⣿
-⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⡾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
-⠀⠙⢿⣌⡑⠲⠄⠀⠀⠙⢿⣿⣶⣦⣼⣿⣄⠀⠈⠉⠛⠻⣿⣶⣯⣤⣀⣀⡀⠀⠘⠿⠾⠟⠁⠀⠀⢀⣀⣤⣾⣿⢿⣿⣇⠀⠀⣼⡟⠀
-⠀⠀⠀⠹⣿⣇⠀⠀⠀⠀⠈⢻⣦⠈⠙⣿⣿⣷⣶⣤⣄⣠⣿⠁⠀⠈⠉⠙⢻⡟⠛⠻⠿⣿⠿⠛⠛⢻⣿⠁⢈⣿⣨⣿⣿⠀⢰⡿⠀⠀
-⠀⠀⠀⠀⠈⢻⣇⠀⠀⠀⠀⠀⠙⢷⣶⡿⠀⠈⠙⠛⠿⣿⣿⣶⣶⣦⣤⣤⣼⣧⣤⣤⣤⣿⣦⣤⣤⣶⣿⣷⣾⣿⣿⣿⡟⠀⢸⡇⠀⠀
-⠀⠀⠀⠀⠀⠈⢿⣦⠀⠀⠀⠀⠀⠀⠙⢷*_⡀⠀⠀⢀⣿⠁⠉⠙⠛⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⢸⣷⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠙⢷⣄⠀⢀⡀⠀⣀⡀⠈⠻⢷⣦⣾⡃⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⢹⡟⠉⠉⣿⠏⢡⣿⠃⣾⣷⡿⠁⠀⠘⣿⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢷⣤⣉⠒⠤⣉⠓⠦⣀⡈⠉⠛⠿⠶⢶⣤⣤⣾⣧⣀⣀⣀⣿⣄⣠⣼⣿⣤⣿⠷⠾⠟⠋⠀⠀⠀⠀⣿⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠿⣶⣄⡉⠒⠤⢌⣑⠲⠤⣀⡀⠀⠀⠀⠈⠍⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⣠⠏⠀⢰⠀⠀⣿⡄⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠛⠿⢷⣦⣄⡉⠑⠒⠪⠭⢄⣀⣀⠀⠐⠒⠒⠒⠒⠀⠀⠐⠒⠊⠉⠀⢀⡠⠚⠀⠀⢸⡇⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠻⢷*_⣀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠓⠒⠒⠒⠊⠁⠀⠀⠀⢠⣿⠃⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠛⠛⠷⠶⣶⣦⣄⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣴⠟⠁⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠙⠛⠛⠷⠶⠶⠶⠶⠶⠾⠛⠛⠉⠀⠀⠀⠀⠀</div>
+                ⢀⣴⠟⠋⠀⠀⠀⠀⢀⣀⠤⠖⠚⢉⣉⣉⣉⣉⣀⠀⠀⠀⠀⠀⠀⠈⠉⠩⠛⠛⠛⠻⠷⣦⣄⡀⠀⠀⠀⠀⠀⠀
+              ⣠⡿⠋⠀⠀⠀⣀⠤⠒⣉⠤⢒⣊⡉⠠⠤⠤⢤⡄⠈⠉⠉⠀⠂⠀⠀⠐⠂⠀⠉⠉⠉⠉⠂⠀⠙⠻⣶⣄⠀⠀⠀⠀
+           ⣰⡿⠁⠀⠀logo⠊⢀⠔⣫⠔⠊⠁⠀⠀⠀⠀⠀⠀⠙⡄⠀⠀⠀⠀⠀⠘⣩⠋⠀⠀⠀⠉⠳⣄⠀⠀⠀⠈⢻⡇⠀⠀⠀
+          ⣰⡿⠁⠀⠀⠀⠀⠀⠁⠜⠁⣀⣤⣶⣶⣶⣤⣤⣀⠀⠃⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠈⠈⠆⠀⠀⠀⠸⣧⡀⠀⠀
+      ⣠⣾⣿⣥⠤⢄⡀⠀⢠⣤⠔⢠⣾⣿⣿⣿⣿⣿⣯⣄⡈⠙⢿⣦⠀⠀⠀⠀⡀⢀⣤⣶⣿⣿⣿⣿⣿⣦⠀⣀⣀⣀⣀⡙⢿⣦⡀
+   ⣠⡾⣻⠋⢀⣠⣴⠶⠾⢶⣤⣄⡚⠉⠉⠉⠁⣠⣼⠏⠉⠙⠛⠷⡾⠛⠀⠀⠀⠘⠛⢿⡟⠛⠋⠉⠉⠉⠁⠀⠀⠀⠀⠀⠦⣝⠦⡙⣿
+  ⢰⡟⠁⡇⢠⣾⠋⠀⠀⣼⣄⠉⠙⠛⠷⠶⠶⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣇⠀⠀⠀⠠⣦⣄⣴⡾⢛⡛⠻⠷⠘⡄⢸⣿
+  ⢸⡇⠀⡇⢸⣇⢀⣤⣴⣿⠻⠷⣦⣄⣀⠀⠀⠀⢀⡀⠀⣀⠰⣤⡶⠶⠆⠀⠀⠀⠀⠀⠈⠛⢿⣦⣄⠀⠈⠉⠉⠁⢸⣇⠀⠀⣠⠃⢸⣿
+  ⢸⣿⡀⢇⠘⣿⡌⠁⠈⣿⣆⠀⠀⠉⢻⣿⣶⣦⣤⣀⡀⠀⠀⢻⣦⠰⡶⠿⠶⠄⠀⠀⠀⣠⡾⠿⠟⠓⠦⡄⠀⢀⣾⣿⡇⢈⠡⠔⣿⡟
+   ⠀⠙⢿⣌⡑⠲⠄⠀⠀⠙⢿⣿⣶⣦⣼⣿⣄⠀⠈⠉⠛⠻⣿⣶⣯⣤⣀⣀⡀⠀⠘⠿⠾⠟⠁⠀⠀⢀⣀⣤⣾⣿⢿⣿⣇⠀⠀⣼⡟⠀
+       ⠹⣿⣇⠀⠀⠀⠀⠈⢻⣦⠈⠙⣿⣿⣷⣶⣤⣄⣠⣿⠁⠀⠈⠉⠙⢻⡟⠛⠻⠿⣿⠿⠛⠛⢻⣿⠁⢈⣿⣨⣿⣿⠀⢰⡿⠀⠀
+         ⠈⢻⣇⠀⠀⠀⠀⠀⠙⢷⣶⡿⠀⠈⠙⠛⠿⣿⣿⣶⣶⣦⣤⣤⣼⣧⣤⣤⣤⣿⣦⣤⣤⣶⣿⣷⣾⣿⣿⣿⡟⠀⢸⡇⠀⠀
+         ⠈⢿⣦⠀⠀⠀⠀⠀⠀⠙⢷*_⡀⠀⠀⢀⣿⠁⠉⠙⠛⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⢸⣷⠀⠀
+           ⠀⠙⢷⣄⠀⢀⡀⠀⣀⡀⠈⠻⢷⣦⣾⡃⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⢹⡟⠉⠉⣿⠏⢡⣿⠃⣾⣷⡿⠁⠀⠘⣿⠀⠀
+             ⠀⠙⢷⣤⣉⠒⠤⣉⠓⠦⣀⡈⠉⠛⠿⠶⢶⣤⣤⣾⣧⣀⣀⣀⣿⣄⣠⣼⣿⣤⣿⠷⠾⠟⠋⠀⠀⠀⠀⣿⠀⠀
+               ⠀⠈⠙⠿⣶⣄⡉⠒⠤⢌⣑⠲⠤⣀⡀⠀⠀⠀⠈⠍⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⣠⠏⠀⢰⠀⠀⣿⡄⠀
+                     ⠀⠙⠛⠿⢷⣦⣄⡉⠑⠒⠪⠭⢄⣀⣀⠀⠐⠒⠒⠒⠒⠀⠀⠐⠒⠊⠉⠀⢀⡠⠚⠀⠀⢸⡇⠀
+                           ⠀⠈⠙⠻⢷*_⣀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠉⠓⠒⠒⠒⠊⠁⠀⠀⠀⢠⣿⠃⠀
+                                 ⠀⠈⠙⠛⠛⠷⠶⣶⣦⣄⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣴⠟⠁⠀⠀
+                                       ⠈⠉⠙⠛⠛⠷⠶⠶6⠶⠾⠛⠛⠉⠀⠀⠀⠀⠀</div>
 
     <div class="user-panel">
         <span id="displayUser">Аноним</span> 
@@ -273,129 +275,146 @@
 </div>
 
 <script>
-function openModal() { document.getElementById('infoModal').style.display = 'flex'; }
-function closeModal() { document.getElementById('infoModal').style.display = 'none'; }
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('infoModal');
-    if (event.target === modal) modal.style.display = 'none';
-});
+    // Инициализация Supabase
+    const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function toggleSidebar() {
-    const sidebar = document.getElementById('leftSidebar');
-    const toggleBtn = document.querySelector('.sidebar-toggle');
-    sidebar.classList.toggle('open');
-    toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
-}
-
-let isAnonymous = true;
-let currentNickname = "Аноним";
-let currentUserId = null;
-
-document.addEventListener("DOMContentLoaded", async function() {
-    const m = document.getElementById('authMenu');
-    currentUserId = localStorage.getItem('currentUserId');
-    
-    if (!currentUserId) {
-        alert('Для создания паст необходимо войти в аккаунт!');
-        window.location.href = 'login.html';
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/users/' + currentUserId);
-        if (response.ok) {
-            const u = await response.json();
-            console.log("Ответ сервера с данными пользователя:", u);
-            
-            // Если в ответе приходит user_1788816744037, убираем префикс "user_" если он задвоился или берем другое поле
-            let rawNick = u.nickname || u.username || u.name;
-            if (rawNick) {
-                // Избавляемся от дублирования user_user_
-                currentNickname = rawNick.replace(/^user_user_/i, 'user_');
-            } else {
-                currentNickname = "user_" + currentUserId;
-            }
-        } else {
-            currentNickname = "user_" + currentUserId;
-        }
-    } catch (err) {
-        console.warn('Не удалось загрузить ник с сервера', err);
-        currentNickname = "user_" + currentUserId;
-    }
-
-    m.innerHTML = '<a href="profile.html?id=' + currentUserId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + currentNickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-    
-    document.getElementById('logoutBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        localStorage.removeItem('currentUserId');
-        window.location.href = 'login.html';
+    function openModal() { document.getElementById('infoModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('infoModal').style.display = 'none'; }
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('infoModal');
+        if (event.target === modal) modal.style.display = 'none';
     });
 
-    updateAuthorDisplay();
-});
-
-function toggleAnon(e) {
-    e.preventDefault();
-    isAnonymous = !isAnonymous;
-    updateAuthorDisplay();
-}
-
-function updateAuthorDisplay() {
-    const displayUser = document.getElementById('displayUser');
-    const toggleBtn = document.getElementById('anonToggle');
-    
-    if (isAnonymous) {
-        displayUser.textContent = "Anonymous";
-        toggleBtn.textContent = "от своего имени";
-    } else {
-        displayUser.textContent = currentNickname;
-        toggleBtn.textContent = "анонимно";
-    }
-}
-
-async function uploadPaste(e) {
-    e.preventDefault();
-    
-    if (!localStorage.getItem('currentUserId')) {
-        alert('Необходимо авторизоваться!');
-        window.location.href = 'login.html';
-        return;
+    function toggleSidebar() {
+        const sidebar = document.getElementById('leftSidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        sidebar.classList.toggle('open');
+        toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
     }
 
-    const title = document.getElementById('pasteTitle').value.trim();
-    const content = document.getElementById('pasteContent').value.trim();
-    const isPublic = document.getElementById('publicCheck').checked;
-    const disableMentions = document.getElementById('mentionCheck').checked;
-    
-    if (!title || !content) return;
+    let isAnonymous = true;
+    let currentNickname = "Аноним";
+    let currentUserId = null;
 
-    try {
-        const response = await fetch('/api/hunts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                title: title,
-                content: content,
-                author: isAnonymous ? "Anonymous" : currentNickname,
-                authorId: isAnonymous ? null : currentUserId,
-                isPublic: isPublic,
-                disableMentions: disableMentions
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.message || 'Ошибка при создании пасты');
+    document.addEventListener("DOMContentLoaded", async function() {
+        const m = document.getElementById('authMenu');
+        currentUserId = localStorage.getItem('currentUserId');
+        
+        if (!currentUserId) {
+            alert('Для создания паст необходимо войти в аккаунт!');
+            window.location.href = 'login.html';
             return;
         }
 
-        window.location.href = "hunt.html";
-    } catch (err) {
-        console.error(err);
-        alert('Ошибка соединения с сервером');
+        try {
+            // Загружаем пользователя из Supabase
+            const { data: u, error } = await _supabase
+                .from('users')
+                .select('*')
+                .eq('id', currentUserId)
+                .single();
+
+            if (u && !error) {
+                let rawNick = u.nickname || u.username || u.name;
+                if (rawNick) {
+                    currentNickname = rawNick.replace(/^user_user_/i, 'user_');
+                } else {
+                    currentNickname = "user_" + currentUserId;
+                }
+            } else {
+                currentNickname = "user_" + currentUserId;
+            }
+        } catch (err) {
+            console.warn('Не удалось загрузить ник из Supabase', err);
+            currentNickname = "user_" + currentUserId;
+        }
+
+        m.innerHTML = '<a href="profile.html?id=' + currentUserId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + currentNickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+        
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('currentUserId');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        });
+
+        updateAuthorDisplay();
+    });
+
+    function toggleAnon(e) {
+        e.preventDefault();
+        isAnonymous = !isAnonymous;
+        updateAuthorDisplay();
     }
-}
+
+    function updateAuthorDisplay() {
+        const displayUser = document.getElementById('displayUser');
+        const toggleBtn = document.getElementById('anonToggle');
+        
+        if (isAnonymous) {
+            displayUser.textContent = "Anonymous";
+            toggleBtn.textContent = "от своего имени";
+        } else {
+            displayUser.textContent = currentNickname;
+            toggleBtn.textContent = "анонимно";
+        }
+    }
+
+    async function uploadPaste(e) {
+        e.preventDefault();
+        
+        if (!localStorage.getItem('currentUserId')) {
+            alert('Необходимо авторизоваться!');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const title = document.getElementById('pasteTitle').value.trim();
+        const content = document.getElementById('pasteContent').value.trim();
+        const isPublic = document.getElementById('publicCheck').checked;
+        const disableMentions = document.getElementById('mentionCheck').checked;
+        
+        if (!title || !content) return;
+
+        // Форматируем текущую дату для отображения в списке (например, "08.09.2026")
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        const formattedDate = `${day}.${month}.${year}`;
+
+        try {
+            // Создаем пасту в таблице 'hunts' через Supabase
+            const { data, error } = await _supabase
+                .from('hunts')
+                .insert([
+                    {
+                        title: title,
+                        content: content,
+                        author: isAnonymous ? "Anonymous" : currentNickname,
+                        authorId: isAnonymous ? null : currentUserId,
+                        isPublic: isPublic,
+                        disableMentions: disableMentions,
+                        date: formattedDate,
+                        views: 0,
+                        commentsCount: 0
+                    }
+                ]);
+
+            if (error) {
+                alert(error.message || 'Ошибка при создании пасты');
+                console.error(error);
+                return;
+            }
+
+            window.location.href = "hunt.html";
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка соединения с базой данных');
+        }
+    }
 </script>
 </body>
 </html>

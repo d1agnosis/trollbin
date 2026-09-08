@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Досье - TrollBin</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { 
             background-color: #0d0d0d; 
@@ -203,6 +205,11 @@
     </div>
 
     <script>
+        // Инициализация Supabase
+        const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         function openModal() { document.getElementById('infoModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('infoModal').style.display = 'none'; }
         
@@ -213,28 +220,45 @@
             toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
         }
 
-        function getCurrentUser() {
+        async function getCurrentUserFromSupabase() {
+            const currentUserId = localStorage.getItem('currentUserId');
+            if (!currentUserId) return null;
+
             try {
-                const userStr = localStorage.getItem('currentUser') || localStorage.getItem('user');
-                return userStr ? JSON.parse(userStr) : null;
+                const { data: u, error } = await _supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUserId)
+                    .single();
+                if (u && !error) return u;
             } catch (e) {
-                return null;
+                console.warn('Ошибка получения текущего юзера', e);
             }
+            return null;
         }
 
-        function updateHeaderAuth() {
+        async function updateHeaderAuth() {
             const authMenu = document.getElementById('authMenu');
-            const currentUser = getCurrentUser();
             const actionArea = document.getElementById('commentActionArea');
+            const currentUser = await getCurrentUserFromSupabase();
 
             if (currentUser) {
-                const userId = currentUser.id || currentUser._id;
+                let rawNick = currentUser.nickname || currentUser.username || currentUser.name;
+                let currentNickname = rawNick ? rawNick.replace(/^user_user_/i, 'user_') : "user_" + currentUser.id;
+
                 authMenu.innerHTML = `
-                    <a href="profile.html?id=${userId}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${currentUser.nickname}</a>
+                    <a href="profile.html?id=${currentUser.id}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${currentNickname}</a>
                     <span style="color: #444;">/</span>
-                    <a href="#" onclick="logoutUser(event)" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>
+                    <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>
                 `;
                 if (actionArea) actionArea.innerHTML = `<button onclick="openProfileModal()" style="background: transparent; border: 1px solid #333; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 11px; cursor: pointer;">add</button>`;
+
+                document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('currentUserId');
+                    localStorage.removeItem('currentUser');
+                    window.location.reload();
+                });
             } else {
                 authMenu.innerHTML = `
                     <a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a>
@@ -245,23 +269,15 @@
             }
         }
 
-        function logoutUser(e) {
-            e.preventDefault();
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('currentUserId');
-            localStorage.removeItem('user');
-            window.location.href = "index.html";
-        }
-
         document.addEventListener("DOMContentLoaded", async function() {
-            updateHeaderAuth();
+            await updateHeaderAuth();
 
             const urlParams = new URLSearchParams(window.location.search);
             let profileId = urlParams.get('id');
-            const currentUser = getCurrentUser();
+            const currentUserId = localStorage.getItem('currentUserId');
 
-            if (!profileId && currentUser) {
-                profileId = String(currentUser.id || currentUser._id);
+            if (!profileId && currentUserId) {
+                profileId = currentUserId;
             }
 
             const avatarContainer = document.getElementById('pAvatarContainer');
@@ -274,19 +290,36 @@
             }
 
             try {
-                // ИСПРАВЛЕН ЗАПРОС: передаем id через query-параметр вместо слэша
-                const response = await fetch(`/api/users?id=${profileId}`);
-                if (!response.ok) throw new Error(`Не удалось получить данные (Статус: ${response.status})`);
-                
-                const user = await response.json();
+                // Загружаем профиль из Supabase по ID
+                const { data: user, error } = await _supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', profileId)
+                    .single();
 
-                document.getElementById('pNickname').textContent = user.nickname || "Без имени";
-                document.getElementById('pId').textContent = user.id || user._id;
-                document.getElementById('pJoined').textContent = user.joined || "Недавно";
-                document.getElementById('pViews').textContent = user.profileViews || 0;
-                document.getElementById('pPastesCount').textContent = user.pastesCount || 0;
-                document.getElementById('pFollowers').textContent = (user.followers || []).length;
-                document.getElementById('pFollowing').textContent = (user.following || []).length;
+                if (error || !user) throw new Error('Пользователь не найден в базе');
+
+                let rawNick = user.nickname || user.username || user.name;
+                let displayNickname = rawNick ? rawNick.replace(/^user_user_/i, 'user_') : "user_" + user.id;
+
+                document.getElementById('pNickname').textContent = displayNickname;
+                document.getElementById('pId').textContent = user.id;
+                
+                // Форматирование даты регистрации
+                let joinedDate = user.joined || user.created_at;
+                if (joinedDate) {
+                    document.getElementById('pJoined').textContent = new Date(joinedDate).toLocaleDateString();
+                } else {
+                    document.getElementById('pJoined').textContent = "Недавно";
+                }
+
+                document.getElementById('pViews').textContent = user.profileViews || user.profile_views || 0;
+                document.getElementById('pPastesCount').textContent = user.pastesCount || user.pastes_count || 0;
+                
+                const followers = user.followers || [];
+                const following = user.following || [];
+                document.getElementById('pFollowers').textContent = Array.isArray(followers) ? followers.length : 0;
+                document.getElementById('pFollowing').textContent = Array.isArray(following) ? following.length : 0;
 
                 if (user.bio) {
                     document.getElementById('pBio').textContent = user.bio;
@@ -301,15 +334,12 @@
                 if (user.avatar && user.avatar.trim() !== '') {
                     avatarContainer.innerHTML = `<img class="profile-avatar" src="${user.avatar}" alt="Avatar">`;
                 } else {
-                    const firstLetter = user.nickname ? user.nickname.charAt(0).toUpperCase() : '?';
+                    const firstLetter = displayNickname ? displayNickname.charAt(0).toUpperCase() : '?';
                     avatarContainer.innerHTML = `<div class="profile-avatar">${firstLetter}</div>`;
                 }
 
-                if (currentUser) {
-                    const currentUid = String(currentUser.id || currentUser._id);
-                    if (currentUid === String(profileId)) {
-                        document.getElementById('editProfileBtn').style.display = 'block';
-                    }
+                if (currentUserId && String(currentUserId) === String(profileId)) {
+                    document.getElementById('editProfileBtn').style.display = 'block';
                 }
 
             } catch (err) {
@@ -318,12 +348,12 @@
                 document.getElementById('pBio').textContent = 'Данный аккаунт не существует в базе данных.';
             }
 
-            loadProfileComments();
+            loadProfileComments(profileId);
         });
 
         function openProfileModal() {
-            const currentUser = getCurrentUser();
-            if (!currentUser) {
+            const currentUserId = localStorage.getItem('currentUserId');
+            if (!currentUserId) {
                 alert("Оставлять комментарии могут только зарегистрированные пользователи!");
                 window.location.href = "login.html";
                 return;
@@ -334,14 +364,11 @@
 
         function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
 
-        function getStorageKey() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return 'profile_comments_' + (urlParams.get('id') || 'general');
-        }
-
-        function loadProfileComments() {
+        // Используем Supabase или localStorage для хранения комментариев профиля профиля
+        async function loadProfileComments(profileId) {
             const listDiv = document.getElementById('profileWidgetCommentsList');
-            let comments = JSON.parse(localStorage.getItem(getStorageKey()) || "[]");
+            const storageKey = 'profile_comments_' + profileId;
+            let comments = JSON.parse(localStorage.getItem(storageKey) || "[]");
             
             if (comments.length === 0) {
                 listDiv.innerHTML = '<div style="color: #666;">no comments found</div>';
@@ -367,20 +394,29 @@
             });
         }
 
-        function saveProfileComment() {
-            const currentUser = getCurrentUser();
-            if (!currentUser) return;
+        async function saveProfileComment() {
+            const currentUserId = localStorage.getItem('currentUserId');
+            if (!currentUserId) return;
+            
             const input = document.getElementById('newProfileCommentInput');
             const text = input.value.trim();
             if (!text) return;
 
-            let comments = JSON.parse(localStorage.getItem(getStorageKey()) || "[]");
-            comments.push({ text, author: currentUser.nickname });
-            localStorage.setItem(getStorageKey(), JSON.stringify(comments));
+            const currentUser = await getCurrentUserFromSupabase();
+            let rawNick = currentUser ? (currentUser.nickname || currentUser.username || currentUser.name) : "User";
+            let authorName = rawNick ? rawNick.replace(/^user_user_/i, 'user_') : "User";
+
+            const urlParams = new URLSearchParams(window.location.search);
+            let profileId = urlParams.get('id') || currentUserId;
+            const storageKey = 'profile_comments_' + profileId;
+
+            let comments = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            comments.push({ text, author: authorName });
+            localStorage.setItem(storageKey, JSON.stringify(comments));
 
             input.value = "";
             closeProfileModal();
-            loadProfileComments();
+            loadProfileComments(profileId);
         }
 
         window.onclick = e => { if (e.target === document.getElementById('profileModal')) closeProfileModal(); }

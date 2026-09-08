@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrollBin - Просмотр пасты</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background-color: #0d0d0d;
@@ -238,195 +240,246 @@
 </div>
 
 <script>
-function toggleSidebar() {
-    const sidebar = document.getElementById('leftSidebar');
-    const toggleBtn = document.querySelector('.sidebar-toggle');
-    sidebar.classList.toggle('open');
-    toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
-}
+    // Инициализация Supabase
+    const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-let currentUsername = "Anonymous";
-
-document.addEventListener("DOMContentLoaded", function() {
-    const m = document.getElementById('authMenu');
-    const id = localStorage.getItem('currentUserId');
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    if (id) {
-        const u = users.find(x => String(x.id) === String(id));
-        if (u) {
-            currentUsername = u.nickname;
-            m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-            document.getElementById('logoutBtn').addEventListener('click', function(e) {
-                e.preventDefault();
-                localStorage.removeItem('currentUserId');
-                location.reload();
-            });
-        }
-    } else {
-        m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+    function toggleSidebar() {
+        const sidebar = document.getElementById('leftSidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        sidebar.classList.toggle('open');
+        toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const pasteId = urlParams.get('id');
-
-    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
-    const pasteIndex = hunts.findIndex(h => h.id === pasteId);
-    const container = document.getElementById('pasteViewContainer');
-
-    if (pasteIndex === -1) {
-        container.innerHTML = '<div class="error-msg">Паста не найдена или была удалена.</div>';
-        return;
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    let paste = hunts[pasteIndex];
+    let currentUsername = "Anonymous";
 
-    paste.views = (paste.views || 0) + 1;
-    hunts[pasteIndex] = paste;
-    localStorage.setItem('hunts', JSON.stringify(hunts));
+    document.addEventListener("DOMContentLoaded", async function() {
+        const m = document.getElementById('authMenu');
+        const currentUserId = localStorage.getItem('currentUserId');
+        
+        if (currentUserId) {
+            try {
+                const { data: u, error } = await _supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUserId)
+                    .single();
 
-    renderPaste(paste);
-});
-
-function renderPaste(paste) {
-    const container = document.getElementById('pasteViewContainer');
-    const commentsKey = 'comments_' + paste.id;
-    let comments = JSON.parse(localStorage.getItem(commentsKey) || '[]');
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    let authorId = paste.authorId;
-    if (!authorId) {
-        const foundUser = users.find(u => u.nickname === paste.author);
-        if (foundUser) authorId = foundUser.id;
-    }
-
-    let authorMarkup = escapeHtml(paste.author || 'Anonymous');
-    if (authorId) {
-        authorMarkup = `<a href="profile.html?id=${authorId}" style="color: #ff3333; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(paste.author)}</a>`;
-    }
-
-    container.innerHTML = `
-        <h1 class="paste-title">${escapeHtml(paste.title)}</h1>
-        <div class="paste-meta">
-            <span>Автор: <strong style="color: #ccc;">${authorMarkup}</strong></span>
-            <span>Дата: ${paste.date || 'Неизвестно'}</span>
-            <span>Просмотров: ${paste.views}</span>
-        </div>
-        <div class="paste-content">${escapeHtml(paste.content)}</div>
-
-        <div class="comments-section">
-            <div class="comments-title">Комментарии (${comments.length})</div>
-            <div class="comment-form">
-                <textarea id="commentInput" placeholder="Написать комментарий..."></textarea>
-                <button class="comment-btn" onclick="addComment('${paste.id}')">Отправить</button>
-            </div>
-            <div class="comments-list" id="commentsList"></div>
-        </div>
-    `;
-
-    renderComments(comments, paste.id);
-}
-
-function renderComments(comments, pasteId) {
-    const list = document.getElementById('commentsList');
-    
-    if (comments.length === 0) {
-        list.innerHTML = '<div style="color: #555; font-size: 12px;">Пока нет комментариев. Будьте первыми!</div>';
-        return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const currentUserId = localStorage.getItem('currentUserId');
-
-    list.innerHTML = comments.map(c => {
-        let authorId = c.authorId;
-        if (!authorId) {
-            const foundUser = users.find(u => u.nickname === c.author);
-            if (foundUser) authorId = foundUser.id;
+                if (u && !error) {
+                    currentUsername = u.nickname || u.username || "Anonymous";
+                    m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + escapeHtml(currentUsername) + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
+                    
+                    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                        e.preventDefault();
+                        localStorage.removeItem('currentUserId');
+                        localStorage.removeItem('currentUser');
+                        location.reload();
+                    });
+                } else {
+                    m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+                }
+            } catch(err) {
+                m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+            }
+        } else {
+            m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
         }
 
-        let authorMarkup = escapeHtml(c.author);
+        const urlParams = new URLSearchParams(window.location.search);
+        const pasteId = urlParams.get('id');
+        const container = document.getElementById('pasteViewContainer');
+
+        if (!pasteId) {
+            container.innerHTML = '<div class="error-msg">ID пасты не указан.</div>';
+            return;
+        }
+
+        try {
+            // Загружаем пасту из Supabase
+            const { data: paste, error } = await _supabase
+                .from('hunts')
+                .select('*')
+                .eq('id', pasteId)
+                .single();
+
+            if (error || !paste) {
+                container.innerHTML = '<div class="error-msg">Паста не найдена или была удалена.</div>';
+                return;
+            }
+
+            // Увеличиваем счетчик просмотров в базе
+            const newViews = (paste.views || 0) + 1;
+            await _supabase
+                .from('hunts')
+                .update({ views: newViews })
+                .eq('id', pasteId);
+            
+            paste.views = newViews;
+
+            renderPaste(paste);
+        } catch (err) {
+            console.error('Ошибка загрузки пасты:', err);
+            container.innerHTML = '<div class="error-msg">Ошибка загрузки пасты с сервера.</div>';
+        }
+    });
+
+    async function renderPaste(paste) {
+        const container = document.getElementById('pasteViewContainer');
+        
+        let comments = [];
+        try {
+            const { data: fetchedComments, error } = await _supabase
+                .from('comments')
+                .select('*')
+                .eq('paste_id', paste.id)
+                .order('date', { ascending: true });
+            
+            if (!error && fetchedComments) {
+                comments = fetchedComments;
+            }
+        } catch(e) {
+            console.error('Ошибка загрузки комментариев:', e);
+        }
+
+        let authorId = paste.author_id || paste.authorId;
+        let authorMarkup = escapeHtml(paste.author || 'Anonymous');
         if (authorId) {
-            authorMarkup = `<a href="profile.html?id=${authorId}">${escapeHtml(c.author)}</a>`;
+            authorMarkup = `<a href="profile.html?id=${authorId}" style="color: #ff3333; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(paste.author)}</a>`;
         }
 
-        let deleteBtnHtml = '';
-        if (currentUserId && c.authorId && String(currentUserId) === String(c.authorId)) {
-            deleteBtnHtml = `<button onclick="deleteComment('${pasteId}', '${c.id}')" style="background: transparent; border: none; color: #ff3333; cursor: pointer; font-size: 11px; font-family: monospace; text-decoration: underline; padding: 0;">Удалить</button>`;
-        }
+        container.innerHTML = `
+            <h1 class="paste-title">${escapeHtml(paste.title)}</h1>
+            <div class="paste-meta">
+                <span>Автор: <strong style="color: #ccc;">${authorMarkup}</strong></span>
+                <span>Дата: ${paste.date || 'Неизвестно'}</span>
+                <span>Просмотров: ${paste.views}</span>
+            </div>
+            <div class="paste-content">${escapeHtml(paste.content)}</div>
 
-        return `
-            <div class="comment-item" id="comment_${c.id}">
-                <div class="comment-header">
-                    <span class="comment-author">${authorMarkup}</span>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <span>${c.date}</span>
-                        ${deleteBtnHtml}
-                    </div>
+            <div class="comments-section">
+                <div class="comments-title">Комментарии (${comments.length})</div>
+                <div class="comment-form">
+                    <textarea id="commentInput" placeholder="Написать комментарий..."></textarea>
+                    <button class="comment-btn" onclick="addComment('${paste.id}')">Отправить</button>
                 </div>
-                <div class="comment-text">${escapeHtml(c.text)}</div>
+                <div class="comments-list" id="commentsList"></div>
             </div>
         `;
-    }).join('');
-}
 
-function addComment(pasteId) {
-    const input = document.getElementById('commentInput');
-    const text = input.value.trim();
-    if (!text) return;
-
-    const currentUserId = localStorage.getItem('currentUserId');
-    const commentsKey = 'comments_' + pasteId;
-    let comments = JSON.parse(localStorage.getItem(commentsKey) || '[]');
-
-    const newComment = {
-        id: 'comm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-        author: currentUsername,
-        authorId: currentUserId || null,
-        text: text,
-        date: new Date().toLocaleString()
-    };
-
-    comments.push(newComment);
-    localStorage.setItem(commentsKey, JSON.stringify(comments));
-
-    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
-    const pasteIndex = hunts.findIndex(h => h.id === pasteId);
-    if (pasteIndex !== -1) {
-        hunts[pasteIndex].commentsCount = comments.length;
-        localStorage.setItem('hunts', JSON.stringify(hunts));
+        renderComments(comments, paste.id);
     }
 
-    input.value = '';
-    renderComments(comments, pasteId);
-    
-    document.querySelector('.comments-title').textContent = `Комментарии (${comments.length})`;
-}
+    function renderComments(comments, pasteId) {
+        const list = document.getElementById('commentsList');
+        
+        if (!comments || comments.length === 0) {
+            list.innerHTML = '<div style="color: #555; font-size: 12px;">Пока нет комментариев. Будьте первыми!</div>';
+            return;
+        }
 
-function deleteComment(pasteId, commentId) {
-    if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) return;
+        const currentUserId = localStorage.getItem('currentUserId');
 
-    const commentsKey = 'comments_' + pasteId;
-    let comments = JSON.parse(localStorage.getItem(commentsKey) || '[]');
-    
-    comments = comments.filter(c => c.id !== commentId);
-    localStorage.setItem(commentsKey, JSON.stringify(comments));
+        list.innerHTML = comments.map(c => {
+            let authorId = c.author_id || c.authorId;
+            let authorMarkup = escapeHtml(c.author);
+            if (authorId) {
+                authorMarkup = `<a href="profile.html?id=${authorId}">${escapeHtml(c.author)}</a>`;
+            }
 
-    let hunts = JSON.parse(localStorage.getItem('hunts') || '[]');
-    const pasteIndex = hunts.findIndex(h => h.id === pasteId);
-    if (pasteIndex !== -1) {
-        hunts[pasteIndex].commentsCount = comments.length;
-        localStorage.setItem('hunts', JSON.stringify(hunts));
+            let deleteBtnHtml = '';
+            if (currentUserId && authorId && String(currentUserId) === String(authorId)) {
+                deleteBtnHtml = `<button onclick="deleteComment('${pasteId}', '${c.id}')" style="background: transparent; border: none; color: #ff3333; cursor: pointer; font-size: 11px; font-family: monospace; text-decoration: underline; padding: 0;">Удалить</button>`;
+            }
+
+            return `
+                <div class="comment-item" id="comment_${c.id}">
+                    <div class="comment-header">
+                        <span class="comment-author">${authorMarkup}</span>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span>${new Date(c.date).toLocaleString()}</span>
+                            ${deleteBtnHtml}
+                        </div>
+                    </div>
+                    <div class="comment-text">${escapeHtml(c.text)}</div>
+                </div>
+            `;
+        }).join('');
     }
 
-    renderComments(comments, pasteId);
-    document.querySelector('.comments-title').textContent = `Комментарии (${comments.length})`;
-}
+    async function addComment(pasteId) {
+        const input = document.getElementById('commentInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const currentUserId = localStorage.getItem('currentUserId');
+
+        const newComment = {
+            id: 'comm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            paste_id: pasteId,
+            author: currentUsername,
+            author_id: currentUserId || null,
+            text: text,
+            date: new Date().toISOString()
+        };
+
+        try {
+            const { error } = await _supabase
+                .from('comments')
+                .insert([newComment]);
+
+            if (error) {
+                alert('Не удалось отправить комментарий.');
+                return;
+            }
+
+            input.value = '';
+
+            // Перезагружаем актуальный список комментариев
+            const { data: comments } = await _supabase
+                .from('comments')
+                .select('*')
+                .eq('paste_id', pasteId)
+                .order('date', { ascending: true });
+
+            renderComments(comments, pasteId);
+            document.querySelector('.comments-title').textContent = `Комментарии (${comments.length})`;
+        } catch (err) {
+            console.error('Ошибка добавления комментария:', err);
+        }
+    }
+
+    async function deleteComment(pasteId, commentId) {
+        if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) return;
+
+        try {
+            const { error } = await _supabase
+                .from('comments')
+                .delete()
+                .eq('id', commentId);
+
+            if (error) {
+                alert('Не удалось удалить комментарий.');
+                return;
+            }
+
+            const { data: comments } = await _supabase
+                .from('comments')
+                .select('*')
+                .eq('paste_id', pasteId)
+                .order('date', { ascending: true });
+
+            renderComments(comments, pasteId);
+            document.querySelector('.comments-title').textContent = `Комментарии (${comments ? comments.length : 0})`;
+        } catch (err) {
+            console.error('Ошибка удаления комментария:', err);
+        }
+    }
 </script>
 </body>
 </html>
