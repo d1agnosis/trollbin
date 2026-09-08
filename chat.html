@@ -3,897 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrollBin - Локальный чат</title>
+    <title>Монгол — Чат</title>
+    <!-- Подключаем ваши стили -->
     <link rel="stylesheet" href="style.css">
-    <style>
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -250px;
-            width: 250px;
-            height: 100%;
-            background: #111;
-            border-right: 1px solid #ff3333;
-            z-index: 2000;
-            transition: left 0.3s ease;
-            box-sizing: border-box;
-            padding: 60px 20px 20px 20px;
-            font-family: Arial, sans-serif;
-        }
-        .sidebar.open {
-            left: 0;
-        }
-        .sidebar-toggle {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            background: #0d0d0d;
-            color: #ff3333;
-            border: 1px solid #331111;
-            border-radius: 4px;
-            width: 32px;
-            height: 32px;
-            font-size: 14px;
-            cursor: pointer;
-            z-index: 2001;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        .sidebar.open ~ .sidebar-toggle {
-            left: 250px;
-            border-left: 1px solid #331111;
-            border-radius: 0 4px 4px 0;
-        }
-        .sidebar-toggle:hover {
-            border-color: #ff3333;
-            background: #141414;
-        }
-        .sidebar-nav-link {
-            display: block;
-            color: #888888;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            font-size: 18px;
-            text-decoration: none;
-            margin-bottom: 20px;
-            transition: color 0.2s ease;
-        }
-        .sidebar-nav-link.logo {
-            color: #ff3333;
-            font-size: 20px;
-            margin-bottom: 30px;
-        }
-        .sidebar-nav-link:hover {
-            color: #ff3333;
-        }
-
-        .badge-count {
-            display: inline-block;
-            background: #ff3333;
-            color: #000;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 8px;
-            vertical-align: middle;
-        }
-        .badge-count:empty {
-            display: none;
-        }
-
-        .chat-wrapper {
-            max-width: 900px;
-            margin: 30px auto;
-            background: #0d0d0d;
-            border: 1px solid #331111;
-            border-radius: 4px;
-            font-family: monospace;
-            display: flex;
-            flex-direction: column;
-            height: 650px;
-            box-sizing: border-box;
-            position: relative;
-        }
-        .chat-header {
-            background: #141414;
-            border-bottom: 1px solid #331111;
-            padding: 10px 15px;
-            color: #ff3333;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        
-        /* Стили для скроллбара под дизайн сайта */
-        .chat-messages::-webkit-scrollbar {
-            width: 6px;
-        }
-        .chat-messages::-webkit-scrollbar-track {
-            background: #0f0f0f;
-            border-radius: 3px;
-        }
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: #555555; /* Серо-белый бегунок */
-            border-radius: 3px;
-        }
-        .chat-messages::-webkit-scrollbar-thumb:hover {
-            background: #ff3333; /* Подсветка красным при наведении */
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            position: relative;
-        }
-        
-        .chat-message {
-            background: #111;
-            border: 1px solid #221111;
-            padding: 10px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #ddd;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            max-width: 75%;
-            min-width: 240px;
-            width: fit-content;
-            position: relative;
-            transition: border-color 0.3s ease;
-        }
-        .chat-message.highlight {
-            border-color: #ff3333 !important;
-            background: #1a0808 !important;
-        }
-
-        .chat-message.incoming {
-            align-self: flex-start;
-        }
-        .chat-message.outgoing {
-            align-self: flex-end;
-            background: #1a0808;
-            border-color: #331111;
-            flex-direction: row-reverse;
-        }
-
-        .chat-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 1px solid #ff3333;
-            background: #1a0a0a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ff3333;
-            font-weight: bold;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        .chat-content {
-            flex: 1;
-            min-width: 0;
-        }
-        .chat-message-header {
-            display: flex;
-            justify-content: space-between;
-            gap: 15px;
-            margin-bottom: 4px;
-            font-size: 11px;
-        }
-        .chat-message.outgoing .chat-message-header {
-            flex-direction: row-reverse;
-        }
-        .chat-message-author {
-            color: #ff4d4d;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .chat-message-author:hover {
-            text-decoration: underline;
-        }
-        .chat-quote {
-            background: #1a0a0a;
-            border-left: 2px solid #ff3333;
-            padding: 4px 8px;
-            margin-bottom: 6px;
-            font-size: 11px;
-            color: #aaa;
-            border-radius: 0 3px 3px 0;
-            transition: background 0.2s ease;
-        }
-        .chat-quote:hover {
-            background: #260f0f;
-            color: #fff;
-        }
-        .chat-message.outgoing .chat-quote {
-            border-left: none;
-            border-right: 2px solid #ff3333;
-            border-radius: 3px 0 0 3px;
-            text-align: right;
-        }
-        .chat-quote-author {
-            color: #ff8888;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .chat-quote-author:hover {
-            text-decoration: underline;
-        }
-        .chat-text {
-            word-break: break-word;
-            line-height: 1.4;
-            margin-bottom: 6px;
-        }
-
-        .chat-mention-link {
-            color: #ff4d4d;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .chat-mention-link:hover {
-            text-decoration: underline;
-        }
-        
-        .chat-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 4px;
-            font-size: 10px;
-        }
-        .chat-message.outgoing .chat-actions {
-            flex-direction: row-reverse;
-        }
-
-        .chat-reply-btn, .chat-delete-btn {
-            background: none;
-            border: none;
-            color: #777;
-            cursor: pointer;
-            font-family: monospace;
-            font-size: 10px;
-            padding: 0;
-        }
-        .chat-reply-btn:hover {
-            color: #ff3333;
-        }
-        .chat-delete-btn:hover {
-            color: #ff4d4d;
-        }
-
-        .chat-reply-preview {
-            background: #140505;
-            border-top: 1px solid #331111;
-            padding: 6px 12px;
-            font-size: 11px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #aaa;
-        }
-        .reply-cancel {
-            background: none;
-            border: none;
-            color: #ff3333;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .chat-input-box {
-            display: flex;
-            border-top: 1px solid #331111;
-            background: #0d0d0d;
-        }
-        .chat-input-box input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 12px;
-            color: #fff;
-            outline: none;
-            font-family: monospace;
-            font-size: 13px;
-        }
-        .chat-input-box button {
-            background: #220000;
-            color: #ff3333;
-            border: none;
-            border-left: 1px solid #331111;
-            padding: 0 20px;
-            font-family: monospace;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .chat-input-box button:hover {
-            background: #330000;
-        }
-        .top-btn {
-            background: #0d0d0d;
-            color: #ff3333;
-            border: 1px solid #331111;
-            padding: 4px 10px;
-            font-family: monospace;
-            font-size: 11px;
-            font-weight: bold;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .top-btn:hover {
-            border-color: #ff3333;
-            background: #141414;
-        }
-
-        .chat-floating-buttons {
-            position: absolute;
-            bottom: 70px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 10;
-        }
-        .chat-float-btn {
-            width: 44px;
-            height: 44px;
-            background: #0d0d0d;
-            border: 1px solid #ff3333;
-            border-radius: 50%;
-            color: #ff3333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-            position: relative;
-            transition: transform 0.2s, background 0.2s;
-        }
-        .chat-float-btn:hover {
-            background: #1c0808;
-            transform: scale(1.05);
-        }
-        .chat-float-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: #ff3333;
-            color: #000;
-            font-size: 10px;
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 10px;
-            border: 1px solid #0d0d0d;
-            pointer-events: none;
-        }
-    </style>
+    <!-- Подключаем библиотеку Supabase для работы с онлайн-базой -->
+    <script src="https://cdn.jsdelivr.5npm/@supabase/supabase-js@2"></script>
 </head>
-<body style="background-color: #0b0b0b; color: #fff; margin: 0; display: flex; flex-direction: column; min-height: 100vh;">
+<body>
 
-<div id="leftSidebar" class="sidebar">
-    <a href="index.html" class="sidebar-nav-link logo">Trollbin</a>
-    <a href="index.html" class="sidebar-nav-link">Home</a>
-    <a href="hunt.html" class="sidebar-nav-link">Hunting</a>
-    <a href="price.html" class="sidebar-nav-link">Price</a>
-    <a href="addcard.html" class="sidebar-nav-link">Add card</a>
-    <a href="chat.html" class="sidebar-nav-link" style="color: #ff3333;">Chat <span id="chatBadge" class="badge-count"></span></a>
-</div>
+    <div class="chat-container">
+        <!-- Шапка чата -->
+        <div class="chat-header">
+            <h2>Чат проекта Монгол</h2>
+        </div>
 
-<button class="sidebar-toggle" onclick="toggleSidebar()">&#10095;</button>
-
-<div style="position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; pointer-events: none; border-bottom: 1px solid #331111; background: #0d0d0d;">
-    <div style="position: relative; width: 100%; height: 60px;">
-        <div id="authMenu" style="position: absolute; top: 50%; transform: translateY(-50%); right: 65px; font-family: monospace; display: inline-flex; gap: 8px; align-items: center; pointer-events: auto;"></div>
-
-        <button onclick="openModal()" style="
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            right: 20px;
-            background: #0d0d0d;
-            color: #ff3333;
-            border: 1px solid #331111;
-            border-radius: 4px;
-            width: 30px;
-            height: 30px;
-            font-family: monospace;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            pointer-events: auto;
-        " onmouseover="this.style.borderColor='#ff3333'; this.style.background='#141414';" onmouseout="this.style.borderColor='#331111'; this.style.background='#0d0d0d';">?</button>
-    </div>
-</div>
-
-<div id="infoModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 3000; justify-content: center; align-items: center;">
-    <div style="background: #0f0f0f; border: 1px solid #ff3333; padding: 30px; max-width: 400px; width: 90%; font-family: monospace; color: #ccc; text-align: left; position: relative;">
-        <h3 style="color: #ff3333; margin-top: 0; text-align: center;">О ПРОЕКТЕ</h3>
-        <p style="font-size: 13px; line-height: 1.5;">
-            <strong>TrollBin</strong> — это архив интернет-троллей и персонажей из Telegram, Discord и других платформ.
-        </p>
-        <button onclick="closeModal()" style="display: block; width: 100%; margin-top: 20px; background: #220000; color: #ff3333; border: 1px solid #ff3333; padding: 8px; font-family: monospace; cursor: pointer; font-weight: bold;">ЗАКРЫТЬ</button>
-    </div>
-</div>
-
-<main style="flex: 1; padding-top: 80px; padding-bottom: 30px;">
-    <div class="chat-wrapper">
-        <div class="chat-header">ЛОКАЛЬНЫЙ ЧАТ TROLLBIN</div>
-        
+        <!-- Окно с сообщениями -->
         <div id="chatMessages" class="chat-messages">
-            <div style="color: #666; font-size: 12px; text-align: center; margin-top: 20px;">Загрузка сообщений...</div>
+            <!-- Сюда динамически подгружаются сообщения -->
         </div>
 
-        <div class="chat-floating-buttons" id="chatFloatingButtons" style="display: none;">
-            <button class="chat-float-btn" id="floatMentionBtn" onclick="scrollToNextMention()" title="К непрочитанным упоминаниям" style="display: none;">
-                <span style="font-size: 18px; font-weight: bold;">@</span>
-                <span class="chat-float-badge" id="mentionBadgeCount">0</span>
-            </button>
-            <button class="chat-float-btn" id="floatScrollBottomBtn" onclick="scrollToBottom()" title="К новым сообщениям" style="display: none;">
-                <span style="font-size: 16px; font-weight: bold;">&#8595;</span>
-            </button>
-        </div>
-
-        <div id="replyPreview" class="chat-reply-preview" style="display: none;">
+        <!-- Превью ответа на сообщение -->
+        <div id="replyPreview" class="reply-preview" style="display: none;">
             <div class="reply-info">
-                Ответ для <span id="replyUser"></span>: <span id="replyTextSnippet"></span>
+                Ответ для: <strong id="replyUser"></strong>
+                <span id="replyTextSnippet"></span>
             </div>
-            <button onclick="cancelReply()" class="reply-cancel">&times;</button>
+            <button onclick="cancelReply()">×</button>
         </div>
 
-        <div class="chat-input-box">
-            <input type="text" id="chatInput" placeholder="Написать сообщение... (@ник для упоминания)" autocomplete="off">
-            <button id="chatSendBtn" onclick="sendMessage()">Отправить</button>
-        </div>
-    </div>
-</main>
-
-<footer style="margin-top: auto; padding: 25px 0; border-top: 1px solid #331111; font-size: 12px; color: #888; text-align: center; width: 100%;">
-    <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 40px; max-width: 900px; margin: 0 auto; padding: 0 20px;">
-        <div style="text-align: center;">
-            <h3 style="color: #ff3333; font-size: 13px; margin: 0 0 5px 0;">TROLLBIN</h3>
-            <p style="margin: 3px 0;">Архив интернет-троллей<br>и персонажей Telegram & Discord.</p>
-        </div>
-        <div style="text-align: center;">
-            <h3 style="color: #ff3333; font-size: 13px; margin: 0 0 5px 0;">КОНТАКТЫ</h3>
-            <p style="margin: 3px 0;">По вопросам связи и жалоб:</p>
-            <a href="mailto:hellcoveredinice@gmail.com" style="color: #00d2ff; text-decoration: none;">hellcoveredinice@gmail.com</a>
-        </div>
-        <div style="text-align: center;">
-            <h3 style="color: #ff3333; font-size: 13px; margin: 0 0 5px 0;">ИНФОРМАЦИЯ</h3>
-            <p style="margin: 3px 0;">База данных обновляется автоматически.</p>
-            <button onclick="scrollToTopPage()" class="top-btn" style="margin-top: 6px;">НАВЕРХ &uarr;</button>
+        <!-- Панель ввода сообщения -->
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Введите сообщение (макс. 300 символов)..." maxlength="300">
+            <button onclick="sendMessage()">Отправить</button>
         </div>
     </div>
-    <p style="margin: 20px 0 0 0; color: #555; font-size: 10px; text-align: center; width: 100%;">&copy; 2026 TrollBin. Все права защищены (или нарушены).</p>
-</footer>
 
-<script>
-    let currentReplyTo = null;
-    let messages = [];
+    <script>
+        // ==========================================
+        // НАСТРОЙКИ SUPABASE (вставьте ваши ключи)
+        // ==========================================
+        const SUPABASE_URL = 'ВАШ_URL_ПРОЕКТА';
+        const SUPABASE_ANON_KEY = 'ВАШ_ANON_KEY';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function openModal() { document.getElementById('infoModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('infoModal').style.display = 'none'; }
-    function toggleSidebar() {
-        const sidebar = document.getElementById('leftSidebar');
-        const toggleBtn = document.querySelector('.sidebar-toggle');
-        sidebar.classList.toggle('open');
-        toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
-    }
-    function scrollToTopPage() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        let currentReplyTo = null;
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const m = document.getElementById('authMenu');
-        const currentUserId = localStorage.getItem('currentUserId');
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        
-        if (m && currentUserId) {
-            const u = users.find(x => x.id === currentUserId);
-            if (u) {
-                m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-                document.getElementById('logoutBtn').addEventListener('click', function(e) {
-                    e.preventDefault();
-                    localStorage.removeItem('currentUserId');
-                    location.reload();
-                });
-            }
-        } else if (m) {
-            m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
-        }
-
-        fetchMessages();
-
-        const chatInput = document.getElementById('chatInput');
-        if (chatInput) {
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendMessage();
-            });
-        }
-
-        const chatContainer = document.getElementById('chatMessages');
-        if (chatContainer) {
-            chatContainer.addEventListener('scroll', updateFloatingButtonsState);
-        }
-    });
-
-    function fetchMessages() {
-        const messages = JSON.parse(localStorage.getItem('localChatMessages') || '[]');
-        renderMessages(messages);
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    function formatMessageText(text, allUsers) {
-        if (!text) return '';
-        const escaped = escapeHtml(text);
-        return escaped.replace(/@([a-zA-Z0-9_а-яА-ЯёЁ\-]+)/g, function(match, username) {
-            const foundUser = allUsers.find(u => u.nickname && u.nickname.toLowerCase() === username.toLowerCase());
-            if (foundUser) {
-                return `<a href="profile.html?id=${foundUser.id}" class="chat-mention-link">${match}</a>`;
-            }
-            return match;
+        // Автозапуск при загрузке страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchMessages();
         });
-    }
 
-    function renderMessages(messages) {
-        const container = document.getElementById('chatMessages');
-        if (!container) return;
-        
-        const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
-
-        container.innerHTML = '';
-
-        if (!messages || messages.length === 0) {
-            container.innerHTML = '<div style="color: #666; font-size: 12px; text-align: center; margin-top: 20px;">Пока нет сообщений. Напишите первыми!</div>';
-            return;
+        // Прокрутка чата вниз
+        function scrollToBottom() {
+            const container = document.getElementById('chatMessages');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
         }
 
-        const currentUserId = localStorage.getItem('currentUserId');
-        const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        // Защита от XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
 
-        messages.forEach(msg => {
-            const div = document.createElement('div');
-            const isOutgoing = (msg.user_id === currentUserId);
-            div.className = `chat-message ${isOutgoing ? 'outgoing' : 'incoming'}`;
-            div.id = `msg-${msg.id}`;
+        // Отрисовка сообщений на экране
+        function renderMessages(messages) {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
 
-            let timeStr = '';
-            if (msg.created_at) {
-                const dateObj = new Date(msg.created_at);
-                const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-                timeStr = dateObj.toLocaleString('ru-RU', options);
-            }
-
-            const authorUser = allUsers.find(u => u.id === msg.user_id) || {};
-            const nickname = authorUser.nickname || msg.nickname || 'Аноним';
-            const avatar = authorUser.avatar !== undefined ? authorUser.avatar : msg.avatar;
-
-            let avatarHtml = '';
-            const firstLetter = nickname.charAt(0).toUpperCase();
-
-            if (avatar && avatar.trim() !== '') {
-                avatarHtml = `<img src="${escapeHtml(avatar)}" class="chat-avatar" alt="${escapeHtml(nickname)}">`;
-            } else {
-                avatarHtml = `<div class="chat-avatar">${firstLetter}</div>`;
-            }
-
-            let quoteHtml = '';
-            if (msg.reply_to_id) {
-                const repliedUserObj = allUsers.find(u => u.nickname && u.nickname.toLowerCase() === (msg.reply_to_user || '').toLowerCase());
-                const repliedUserId = repliedUserObj ? repliedUserObj.id : null;
+            const currentUserId = localStorage.getItem('currentUserId');
+            
+            container.innerHTML = messages.map(msg => {
+                const isMyMessage = msg.user_id === currentUserId;
                 
-                let authorQuoteHtml = `<span class="chat-quote-author">${escapeHtml(msg.reply_to_user || 'Пользователь')}</span>`;
-                if (repliedUserId) {
-                    authorQuoteHtml = `<a href="profile.html?id=${repliedUserId}" class="chat-quote-author">${escapeHtml(msg.reply_to_user)}</a>`;
-                }
-
-                quoteHtml = `
-                    <div class="chat-quote">
-                        <div onclick="scrollToMessage(${msg.reply_to_id})" style="cursor: pointer;">
-                            ${authorQuoteHtml}: ${escapeHtml(msg.reply_to_text || '')}
+                return `
+                    <div class="message ${isMyMessage ? 'my-message' : ''}">
+                        <div class="message-content">
+                            ${msg.reply_to_text ? `<div class="quoted"><b>${escapeHtml(msg.reply_to_user || 'Пользователь')}:</b> ${escapeHtml(msg.reply_to_text)}</div>` : ''}
+                            <div class="text">${escapeHtml(msg.text)}</div>
+                        </div>
+                        <div class="message-actions">
+                            <button onclick="setReply(${msg.id}, 'Пользователь', '${escapeHtml(msg.text).replace(/'/g, "\\'")}')">Ответить</button>
+                            ${isMyMessage ? `<button onclick="deleteMessage(${msg.id})">Удалить</button>` : ''}
                         </div>
                     </div>
                 `;
+            }).join('');
+
+            scrollToBottom();
+        }
+
+        // 1. Загрузка сообщений из Supabase и подписка в реальном времени
+        async function fetchMessages() {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+
+            const { data: messages, error } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Ошибка загрузки чата:', error);
+                return;
             }
 
-            let deleteBtnHtml = '';
-            if (isOutgoing) {
-                deleteBtnHtml = `<button class="chat-delete-btn" onclick="deleteMessage(${msg.id})">Удалить</button>`;
+            renderMessages(messages);
+
+            // Автообновление (Realtime) для всех устройств
+            if (!window._supabaseSubscribed) {
+                window._supabaseSubscribed = true;
+                supabaseClient
+                    .channel('public:messages')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, payload => {
+                        fetchMessages();
+                    })
+                    .subscribe();
             }
-
-            const formattedText = formatMessageText(msg.text || '', allUsers);
-
-            div.innerHTML = `
-                ${avatarHtml}
-                <div class="chat-content">
-                    <div class="chat-message-header">
-                        <a href="profile.html?id=${msg.user_id}" class="chat-message-author">${escapeHtml(nickname)}</a>
-                        <span class="chat-message-time">${timeStr}</span>
-                    </div>
-                    ${quoteHtml}
-                    <div class="chat-text">${formattedText}</div>
-                    <div class="chat-actions">
-                        <button class="chat-reply-btn" onclick="setReply(${msg.id}, '${escapeHtml(nickname).replace(/'/g, "\\'")}', '${escapeHtml(msg.text || '').replace(/'/g, "\\'")}')">Ответить</button>
-                        ${isOutgoing ? '<span style="color: #444;">|</span>' : ''}
-                        ${deleteBtnHtml}
-                    </div>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-
-        if (isAtBottom || !window._hasScrolledInitial) {
-            container.scrollTop = container.scrollHeight;
-            window._hasScrolledInitial = true;
-            markAllAsRead();
         }
 
-        updateFloatingButtonsState();
-    }
-
-    function updateFloatingButtonsState() {
-        const container = document.getElementById('chatMessages');
-        const floatBox = document.getElementById('chatFloatingButtons');
-        const mentionBtn = document.getElementById('floatMentionBtn');
-        const scrollBottomBtn = document.getElementById('floatScrollBottomBtn');
-        const mentionBadge = document.getElementById('mentionBadgeCount');
-        const unreadDownBadge = document.getElementById('unreadDownCount');
-
-        if (!container || !floatBox) return;
-
-        const currentUserId = localStorage.getItem('currentUserId');
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const currentUser = users.find(u => u.id === currentUserId);
-        const messages = JSON.parse(localStorage.getItem('localChatMessages') || '[]');
-
-        if (!currentUser) {
-            floatBox.style.display = 'none';
-            return;
+        // Установка ответа на сообщение
+        function setReply(id, nickname, text) {
+            currentReplyTo = { id: id, user: nickname, text: text };
+            document.getElementById('replyUser').textContent = nickname;
+            document.getElementById('replyTextSnippet').textContent = text;
+            document.getElementById('replyPreview').style.display = 'flex';
+            document.getElementById('chatInput').focus();
         }
 
-        const userNickname = currentUser.nickname.toLowerCase();
-        let readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUserId) || '[]');
+        // Отмена ответа
+        function cancelReply() {
+            currentReplyTo = null;
+            document.getElementById('replyPreview').style.display = 'none';
+        }
 
-        let unreadMentionsAbove = 0;
-        let hasUnreadDown = false;
+        // 2. Удаление сообщения из базы данных
+        async function deleteMessage(id) {
+            const { error } = await supabaseClient
+                .from('messages')
+                .delete()
+                .eq('id', id);
 
-        const scrollTop = container.scrollTop;
-        const scrollBottom = scrollTop + container.clientHeight;
-        const isAtBottom = container.scrollHeight - scrollBottom < 60;
-
-        messages.forEach(msg => {
-            const msgEl = document.getElementById(`msg-${msg.id}`);
-            const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
-            if (isMyMessage) return;
-
-            const text = (msg.text || '').toLowerCase();
-            const isMentioned = text.includes('@' + userNickname) || text.includes(userNickname);
-            const isReplyToMe = (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-
-            if (isMentioned || isReplyToMe) {
-                if (!readMentions.includes(msg.id)) {
-                    if (msgEl) {
-                        const elTop = msgEl.offsetTop;
-                        if (elTop < scrollTop) {
-                            unreadMentionsAbove++;
-                        }
-                    }
-                }
+            if (error) {
+                alert('Не удалось удалить сообщение');
+                console.error(error);
             }
+        }
 
-            if (msgEl) {
-                if (msgEl.offsetTop > scrollBottom) {
-                    hasUnreadDown = true;
-                }
+        // 3. Отправка сообщения в общую базу
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+            let text = input.value.trim();
+            if (!text) return;
+
+            if (text.length > 300) {
+                text = text.substring(0, 300);
             }
-        });
-
-        if (isAtBottom) {
-            markAllAsRead();
-            unreadMentionsAbove = 0;
-            hasUnreadDown = false;
-        }
-
-        if (unreadMentionsAbove > 0) {
-            mentionBtn.style.display = 'flex';
-            mentionBadge.textContent = unreadMentionsAbove;
-        } else {
-            mentionBtn.style.display = 'none';
-        }
-
-        if (!isAtBottom && hasUnreadDown) {
-            scrollBottomBtn.style.display = 'flex';
-            if (unreadDownBadge) unreadDownBadge.style.display = 'none';
-        } else {
-            scrollBottomBtn.style.display = 'none';
-        }
-
-        if (unreadMentionsAbove === 0 && isAtBottom) {
-            floatBox.style.display = 'none';
-        } else {
-            floatBox.style.display = 'flex';
-        }
-    }
-
-    function markAllAsRead() {
-        const currentUserId = localStorage.getItem('currentUserId');
-        if (!currentUserId) return;
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const currentUser = users.find(u => u.id === currentUserId);
-        if (!currentUser) return;
-
-        const userNickname = currentUser.nickname.toLowerCase();
-        const chatMessages = JSON.parse(localStorage.getItem('localChatMessages') || '[]');
-        let readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUserId) || '[]');
-
-        chatMessages.forEach(msg => {
-            const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
-            if (isMyMessage) return;
-
-            const text = (msg.text || '').toLowerCase();
-            const isMentioned = text.includes('@' + userNickname) || text.includes(userNickname);
-            const isReplyToMe = (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-
-            if ((isMentioned || isReplyToMe) && !readMentions.includes(msg.id)) {
-                readMentions.push(msg.id);
-            }
-        });
-
-        localStorage.setItem('readMentions_' + currentUserId, JSON.stringify(readMentions));
-    }
-
-    function scrollToNextMention() {
-        const currentUserId = localStorage.getItem('currentUserId');
-        if (!currentUserId) return;
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const currentUser = users.find(u => u.id === currentUserId);
-        if (!currentUser) return;
-
-        const userNickname = currentUser.nickname.toLowerCase();
-        const messages = JSON.parse(localStorage.getItem('localChatMessages') || '[]');
-        const container = document.getElementById('chatMessages');
-        const scrollTop = container.scrollTop;
-
-        let targetMsg = messages.find(msg => {
-            const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
-            if (isMyMessage) return false;
-            const text = (msg.text || '').toLowerCase();
-            const isMentioned = text.includes('@' + userNickname) || text.includes(userNickname);
-            const isReplyToMe = (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-
-            if (isMentioned || isReplyToMe) {
-                const msgEl = document.getElementById(`msg-${msg.id}`);
-                if (msgEl && msgEl.offsetTop < scrollTop) {
-                    return true;
-                }
-            }
-            return false;
-        });
-
-        if (targetMsg) {
-            scrollToMessage(targetMsg.id);
-        } else {
-            let anyMention = messages.find(msg => {
-                const isMyMessage = (msg.user_id === currentUserId || msg.nickname === currentUser.nickname);
-                if (isMyMessage) return false;
-                const text = (msg.text || '').toLowerCase();
-                return text.includes('@' + userNickname) || text.includes(userNickname) || (msg.reply_to_user && msg.reply_to_user.toLowerCase() === userNickname);
-            });
-            if (anyMention) scrollToMessage(anyMention.id);
-        }
-    }
-
-    function scrollToBottom() {
-        const container = document.getElementById('chatMessages');
-        if (container) {
-            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-            setTimeout(markAllAsRead, 300);
-        }
-    }
-
-    function scrollToMessage(id) {
-        const targetElement = document.getElementById(`msg-${id}`);
-        if (targetElement) {
-            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            targetElement.classList.add('highlight');
-            setTimeout(() => {
-                targetElement.classList.remove('highlight');
-            }, 1500);
 
             const currentUserId = localStorage.getItem('currentUserId');
-            if (currentUserId) {
-                let readMentions = JSON.parse(localStorage.getItem('readMentions_' + currentUserId) || '[]');
-                if (!readMentions.includes(id)) {
-                    readMentions.push(id);
-                    localStorage.setItem('readMentions_' + currentUserId, JSON.stringify(readMentions));
-                }
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const currentUser = users.find(u => u.id === currentUserId);
+
+            if (!currentUser) {
+                alert('Чтобы писать в чат, необходимо войти в аккаунт!');
+                window.location.href = 'login.html';
+                return;
             }
-            setTimeout(updateFloatingButtonsState, 500);
-        } else {
-            alert('Исходное сообщение не найдено (возможно, оно было удалено).');
-        }
-    }
 
-    function setReply(id, nickname, text) {
-        currentReplyTo = { id: id, user: nickname, text: text };
-        document.getElementById('replyUser').textContent = nickname;
-        document.getElementById('replyTextSnippet').textContent = text;
-        document.getElementById('replyPreview').style.display = 'flex';
-        document.getElementById('chatInput').focus();
-    }
+            const { error } = await supabaseClient
+                .from('messages')
+                .insert([{
+                    user_id: currentUser.id,
+                    text: text,
+                    reply_to_id: currentReplyTo ? currentReplyTo.id : null,
+                    reply_to_text: currentReplyTo ? currentReplyTo.text : null,
+                    reply_to_user: currentReplyTo ? currentReplyTo.user : null
+                }]);
 
-    function cancelReply() {
-        currentReplyTo = null;
-        document.getElementById('replyPreview').style.display = 'none';
-    }
-
-    function deleteMessage(id) {
-        let messages = JSON.parse(localStorage.getItem('localChatMessages') || '[]');
-        messages = messages.filter(msg => msg.id !== id);
-        localStorage.setItem('localChatMessages', JSON.stringify(messages));
-        fetchMessages();
-    }
-
-    function sendMessage() {
-        const input = document.getElementById('chatInput');
-        if (!input) return;
-        let text = input.value.trim();
-        if (!text) return;
-
-        if (text.length > 300) {
-            text = text.substring(0, 300);
-        }
-
-        const currentUserId = localStorage.getItem('currentUserId');
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const currentUser = users.find(u => u.id === currentUserId);
-
-        if (!currentUser) {
-            alert('Чтобы писать в чат, необходимо войти в аккаунт!');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        let messages = JSON.parse(localStorage.getItem('localChatMessages') || '[]');
-
-        const newMessage = {
-            id: Date.now(),
-            created_at: new Date().toISOString(),
-            user_id: currentUser.id,
-            text: text,
-            reply_to_id: currentReplyTo ? currentReplyTo.id : null,
-            reply_to_text: currentReplyTo ? currentReplyTo.text : null,
-            reply_to_user: currentReplyTo ? currentReplyTo.user : null
-        };
-
-        messages.push(newMessage);
-
-        try {
-            if (messages.length > 5000) {
-                messages = messages.slice(-5000);
+            if (error) {
+                alert('Ошибка при отправке сообщения');
+                console.error(error);
+                return;
             }
-            localStorage.setItem('localChatMessages', JSON.stringify(messages));
-        } catch (e) {
-            messages = messages.slice(-2000);
-            localStorage.setItem('localChatMessages', JSON.stringify(messages));
-        }
 
-        input.value = '';
-        cancelReply();
-        fetchMessages();
-        scrollToBottom();
-    }
-</script>
+            input.value = '';
+            cancelReply();
+            scrollToBottom();
+        }
+    </script>
 </body>
 </html>
