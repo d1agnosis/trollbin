@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrollBin - Вход</title>
+    <title>TrollBin - Регистрация</title>
     <link rel="stylesheet" href="style.css">
     <!-- Подключаем Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -98,9 +98,9 @@
 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 1000; pointer-events: none; border-bottom: 1px solid #331111; background: #0d0d0d;">
     <div style="position: relative; width: 100%; height: 100%;">
         <div id="authMenu" style="position: absolute; top: 50%; transform: translateY(-50%); right: 65px; font-family: monospace; display: inline-flex; gap: 8px; align-items: center; pointer-events: auto;">
-            <a href="login.html" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a>
+            <a href="login.html" style="color: #888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a>
             <span style="color: #444;">/</span>
-            <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>
+            <a href="register.html" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>
         </div>
 
         <button onclick="openModal()" style="
@@ -110,10 +110,10 @@
 </div>
 
 <div style="max-width: 350px; margin: 120px auto 0 auto; text-align: left; font-family: monospace;">
-    <div style="font-size: 38px; font-weight: bold; margin-bottom: 25px; text-align: center; color: #ff3333; letter-spacing: 2px; text-shadow: 2px 2px 5px rgba(255, 51, 51, 0.4);">Login</div>
+    <div style="font-size: 38px; font-weight: bold; margin-bottom: 25px; text-align: center; color: #ff3333; letter-spacing: 2px; text-shadow: 2px 2px 5px rgba(255, 51, 51, 0.4);">Register</div>
     
     <div style="font-size: 13px; font-weight: bold; color: #ff3333; margin-bottom: 8px; letter-spacing: 1px; text-align: left;">USERNAME</div>
-    <input type="text" id="loginUsername" placeholder="Введите имя пользователя..." style="
+    <input type="text" id="regUsername" placeholder="Придумайте имя пользователя..." style="
         width: 100%;
         background: #0b0b0b;
         border: 2px solid #ff3333;
@@ -129,7 +129,7 @@
     ">
     
     <div style="font-size: 13px; font-weight: bold; color: #ff3333; margin-bottom: 8px; letter-spacing: 1px; text-align: left;">PASSWORD</div>
-    <input type="password" id="loginPassword" placeholder="Введите пароль..." style="
+    <input type="password" id="regPassword" placeholder="Придумайте пароль..." style="
         width: 100%;
         background: #0b0b0b;
         border: 2px solid #ff3333;
@@ -144,7 +144,7 @@
         display: block;
     ">
     
-    <button onclick="loginUser()" style="
+    <button onclick="registerUser()" style="
         width: 100%;
         background: #ff3333;
         color: #000;
@@ -155,10 +155,10 @@
         font-family: monospace;
         cursor: pointer;
         display: block;
-    ">LOGIN</button>
+    ">REGISTER</button>
     
     <div style="text-align: center; margin-top: 20px; font-size: 13px;">
-        Нет аккаунта? <a href="register.html" style="color: #ff3333; text-decoration: none;">Зарегистрироваться</a>
+        Уже есть аккаунт? <a href="login.html" style="color: #ff3333; text-decoration: none;">Войти</a>
     </div>
 </div>
 
@@ -205,7 +205,7 @@
 </div>
 
 <script>
-    // Инициализация Supabase с вашими ключами
+    // Инициализация Supabase
     const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -230,34 +230,10 @@
         toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
     }
 
-    // Автоматическая проверка авторизации для шапки
-    document.addEventListener("DOMContentLoaded", function() {
-        const m = document.getElementById('authMenu');
-        const currentUserId = localStorage.getItem('currentUserId');
-        
-        if (currentUserId && m) {
-            try {
-                const localUserStr = localStorage.getItem('currentUser');
-                if (localUserStr) {
-                    const u = JSON.parse(localUserStr);
-                    const uId = u.id || u._id;
-                    m.innerHTML = '<a href="profile.html?id=' + uId + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + u.nickname + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
-                    
-                    document.getElementById('logoutBtn').addEventListener('click', function(e) {
-                        e.preventDefault();
-                        localStorage.removeItem('currentUserId');
-                        localStorage.removeItem('currentUser');
-                        location.reload();
-                    });
-                }
-            } catch(e) {}
-        }
-    });
-
-    // Функция входа через Supabase
-    async function loginUser() {
-        const username = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value;
+    // Регистрация через Supabase
+    async function registerUser() {
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value;
 
         if (!username || !password) {
             alert('Заполните все поля!');
@@ -265,28 +241,51 @@
         }
 
         try {
-            const { data, error } = await _supabase
+            // Проверяем, существует ли уже такой пользователь
+            const { data: existingUser } = await _supabase
                 .from('users')
-                .select('*')
+                .select('id')
                 .eq('nickname', username)
-                .eq('password', password)
-                .single();
+                .maybeSingle();
 
-            if (error || !data) {
-                alert('Неверное имя пользователя или пароль!');
+            if (existingUser) {
+                alert('Пользователь с таким именем уже существует!');
                 return;
             }
 
-            const userId = data.id;
-            
+            // Генерируем уникальный ID
+            const userId = 'user_' + Date.now() + Math.random().toString(36).substr(2, 5);
+            const newUser = {
+                id: userId,
+                nickname: username,
+                username: username,
+                password: password,
+                joined: new Date().toLocaleDateString(),
+                nicknameColor: '#61b5ff',
+                avatar: '',
+                banner: '',
+                bio: ''
+            };
+
+            // Сохраняем в таблицу users
+            const { error } = await _supabase
+                .from('users')
+                .insert([newUser]);
+
+            if (error) {
+                throw error;
+            }
+
+            // Сохраняем сессию локально
             localStorage.setItem('currentUserId', userId);
-            localStorage.setItem('currentUser', JSON.stringify(data));
-            
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+            alert('Регистрация успешна!');
             window.location.href = 'profile.html?id=' + userId;
 
         } catch (err) {
-            console.error('Ошибка входа:', err);
-            alert('Произошла ошибка при подключении к базе данных.');
+            console.error('Ошибка регистрации:', err);
+            alert('Ошибка регистрации через базу данных. Попробуйте позже.');
         }
     }
 </script>
