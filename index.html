@@ -348,6 +348,7 @@
         const container = document.getElementById('usersListContainer');
         const searchInput = document.getElementById('searchInput');
         const counter = document.getElementById('profilesCount');
+        const m = document.getElementById('authMenu');
 
         let users = [];
 
@@ -431,18 +432,14 @@
             });
         }
 
-        // Авторизация в правом верхнем углу
-        const m = document.getElementById('authMenu');
+        // Авторизация в правом верхнем углу (отображение никнейма)
         if (m) {
             const currentUserId = localStorage.getItem('currentUserId');
             let currentUserObj = null;
 
             if (currentUserId && users.length > 0) {
-                currentUserObj = users.find(x => x.id === currentUserId || x.nickname === currentUserId);
-            }
-
-            if (!currentUserObj && currentUserId) {
-                currentUserObj = { id: currentUserId, nickname: currentUserId };
+                // Ищем по id или по нику (с приведением к строкам для точности)
+                currentUserObj = users.find(x => String(x.id) === String(currentUserId) || x.nickname === currentUserId);
             }
 
             if (currentUserObj) {
@@ -458,6 +455,31 @@
                         localStorage.removeItem('currentUserId');
                         location.reload();
                     });
+                }
+            } else if (currentUserId && supabaseClient) {
+                // Если массив users еще пуст или не нашелся в нем — делаем точечный запрос за ником
+                try {
+                    const { data: singleUser } = await supabaseClient
+                        .from('users')
+                        .select('id, nickname')
+                        .eq('id', currentUserId)
+                        .maybeSingle();
+
+                    if (singleUser) {
+                        const uId = singleUser.id;
+                        const uNick = singleUser.nickname || currentUserId;
+                        m.innerHTML = `<a href="profile.html?id=${uId}" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">${uNick}</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>`;
+                        
+                        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                            e.preventDefault();
+                            localStorage.removeItem('currentUserId');
+                            location.reload();
+                        });
+                    } else {
+                        m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
+                    }
+                } catch (err) {
+                    m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
                 }
             } else {
                 m.innerHTML = '<a href="login.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Login</a> <span style="color: #444;">/</span> <a href="register.html" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Register</a>';
