@@ -113,146 +113,126 @@
     </div>
 
     <script>
-        // Инициализация Supabase
-        const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Инициализация Supabase
+    const SUPABASE_URL = 'https://nkypmvnhaqowvrzliibi.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let newAvatarBase64 = '';
-        let newBannerBase64 = '';
-        let currentUserId = null;
+    function openModal() {
+        document.getElementById('infoModal').style.display = 'flex';
+    }
 
-        document.addEventListener("DOMContentLoaded", async function() {
-            currentUserId = localStorage.getItem('currentUserId');
-            if (!currentUserId) {
-                window.location.href = 'login.html';
-                return;
-            }
+    function closeModal() {
+        document.getElementById('infoModal').style.display = 'none';
+    }
 
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('infoModal');
+        if (event.target === modal) modal.style.display = 'none';
+    });
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('leftSidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        sidebar.classList.toggle('open');
+        toggleBtn.innerHTML = sidebar.classList.contains('open') ? '&#10094;' : '&#10095;';
+    }
+
+    // Автоматическая проверка авторизации для шапки
+    document.addEventListener("DOMContentLoaded", async function() {
+        const m = document.getElementById('authMenu');
+        const currentUserId = localStorage.getItem('currentUserId');
+        
+        if (currentUserId && m) {
             try {
-                // Загружаем данные пользователя из Supabase
-                const { data: user, error } = await _supabase
+                const { data: u, error } = await _supabase
                     .from('users')
                     .select('*')
                     .eq('id', currentUserId)
                     .single();
 
-                if (error || !user) {
-                    alert('Пользователь не найден.');
-                    window.location.href = 'login.html';
-                    return;
-                }
+                if (u && !error) {
+                    let rawNick = u.nickname || u.username || u.name;
+                    let displayNick = rawNick ? rawNick.replace(/^user_user_/i, 'user_') : "user_" + u.id;
 
-                document.getElementById('nicknameInput').value = user.nickname || user.username || '';
-                document.getElementById('nicknameColorInput').value = user.nicknameColor || user.nickname_color || '#61b5ff';
-                document.getElementById('bioInput').value = user.bio || '';
-                newAvatarBase64 = user.avatar || '';
-                newBannerBase64 = user.banner || '';
-
-                if (newAvatarBase64) {
-                    document.getElementById('avatarFileName').textContent = 'Аватар загружен';
-                }
-                if (newBannerBase64) {
-                    document.getElementById('bannerFileName').textContent = 'Баннер загружен';
-                }
-
-            } catch (err) {
-                console.error('Ошибка загрузки данных профиля:', err);
-            }
-
-            // Загрузка аватарки
-            document.getElementById('avatarFile').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    document.getElementById('avatarFileName').textContent = file.name;
-                    const reader = new FileReader();
-                    reader.onload = function(uploadEvent) {
-                        newAvatarBase64 = uploadEvent.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    document.getElementById('avatarFileName').textContent = 'Файл не выбран';
-                }
-            });
-
-            // Загрузка баннера
-            document.getElementById('bannerFile').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    document.getElementById('bannerFileName').textContent = file.name;
-                    const reader = new FileReader();
-                    reader.onload = function(uploadEvent) {
-                        newBannerBase64 = uploadEvent.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    document.getElementById('bannerFileName').textContent = 'Файл не выбран';
-                }
-            });
-
-            // Сохранение изменений
-            document.getElementById('settingsForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const updatedData = {
-                    nickname: document.getElementById('nicknameInput').value.trim(),
-                    nicknameColor: document.getElementById('nicknameColorInput').value,
-                    avatar: newAvatarBase64,
-                    banner: newBannerBase64,
-                    bio: document.getElementById('bioInput').value.trim()
-                };
-
-                try {
-                    // Обновляем данные в таблице users в Supabase
-                    const { error } = await _supabase
-                        .from('users')
-                        .update(updatedData)
-                        .eq('id', currentUserId);
-
-                    if (error) {
-                        throw error;
-                    }
+                    m.innerHTML = '<a href="profile.html?id=' + u.id + '" style="color: #ff3333; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">' + displayNick + '</a> <span style="color: #444;">/</span> <a href="#" id="logoutBtn" style="color: #888888; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: none;">Logout</a>';
                     
-                    alert('Изменения успешно сохранены!');
-                    window.location.href = 'profile.html?id=' + currentUserId;
-                } catch (err) {
-                    console.error('Ошибка сохранения:', err);
-                    alert('Ошибка при сохранении изменений в базе данных.');
+                    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                        e.preventDefault();
+                        localStorage.removeItem('currentUserId');
+                        localStorage.removeItem('currentUser');
+                        location.reload();
+                    });
                 }
-            });
-        });
+            } catch(e) {}
+        }
+    });
 
-        async function resetAvatar() {
-            newAvatarBase64 = '';
-            document.getElementById('avatarFile').value = '';
-            document.getElementById('avatarFileName').textContent = 'Файл не выбран';
-            
-            try {
-                await _supabase
-                    .from('users')
-                    .update({ avatar: '' })
-                    .eq('id', currentUserId);
-                alert('Аватарка сброшена!');
-            } catch(e) {
-                console.error(e);
-            }
+    async function registerUser() {
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value;
+
+        if (!username || !password) {
+            alert('Заполните все поля!');
+            return;
         }
 
-        async function resetBanner() {
-            newBannerBase64 = '';
-            document.getElementById('bannerFile').value = '';
-            document.getElementById('bannerFileName').textContent = 'Файл не выбран';
-            
-            try {
-                await _supabase
-                    .from('users')
-                    .update({ banner: '' })
-                    .eq('id', currentUserId);
-                alert('Баннер сброшен!');
-            } catch(e) {
-                console.error(e);
-            }
+        const usernameRegex = /^[a-zA-Z0-9_.]+$/;
+        if (!usernameRegex.test(username)) {
+            alert('Недопустимые символы в никнейме!');
+            return;
         }
-    </script>
+
+        if (password.length < 8) {
+            alert('Пароль слишком короткий (минимум 8 символов)!');
+            return;
+        }
+
+        try {
+            // Проверяем, не занято ли имя пользователя (точное совпадение через .eq)
+            const { data: existingUsers, error: checkError } = await _supabase
+                .from('users')
+                .select('id, nickname')
+                .eq('nickname', username);
+
+            if (checkError) {
+                throw checkError;
+            }
+
+            if (existingUsers && existingUsers.length > 0) {
+                alert('Пользователь с таким именем уже существует!');
+                return;
+            }
+
+            // Создаем нового пользователя в базе данных Supabase
+            const newUserId = 'user_' + Date.now();
+            const newUser = {
+                id: newUserId,
+                nickname: username,
+                password: password,
+                joined: new Date().toISOString()
+            };
+
+            const { error: insertError } = await _supabase
+                .from('users')
+                .insert([newUser]);
+
+            if (insertError) {
+                throw insertError;
+            }
+
+            // Сохраняем сессию локально
+            localStorage.setItem('currentUserId', newUserId);
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+            alert('Регистрация успешна!');
+            window.location.href = 'profile.html?id=' + newUserId;
+
+        } catch (err) {
+            console.error('Ошибка регистрации:', err);
+            alert('Ошибка: ' + (err.message || JSON.stringify(err)));
+        }
+    }
+</script>
 </body>
 </html>
