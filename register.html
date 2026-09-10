@@ -186,11 +186,15 @@
 </main>
 
 <!-- Подключаем Supabase SDK -->
+<script src="https://cdn.jsdelivr.5npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-    // Жестко прописанный клиент во избежание багов сборки
-    const _supabase = window.supabase.createClient('https://nkypmvnhaqowvrzliibi.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reXBtdmhucWFvdndyemxpaWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTI5MzEsImV4cCI6MjEwNDQyODkzMX0.BMKSlLliqIqCY2-AXi0XCPuwuJYV5qyNs1skSA33jyk', { auth: { persistSession: false } });
+    // Подключение к вашему реальному проекту Supabase
+    const SUPABASE_URL = 'https://qndrpwbxkaxntvtevonsj.supabase.co';
+    const SUPABASE_ANON_KEY = 'ВАШ_АКТУАЛЬНЫЙ_ANON_КЛЮЧ_ИЗ_SUPABASE'; // Замените на ваш рабочий ключ, если он отличается
+
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 
     function toggleSidebar() {
         const sidebar = document.getElementById('leftSidebar');
